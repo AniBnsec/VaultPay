@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pay & Receive UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/davidshimjs-qrcodejs@0.0.2/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1f2937; /* Fallback background */
+            transition: background-color 0.3s ease-in-out;
+            overflow: hidden; /* Prevent body scrollbars */
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place behind all content */
+        }
+        .view, .modal-backdrop, .tab-content {
+            transition: opacity 0.3s ease-in-out;
+            will-change: opacity;
+        }
+        .view.hidden, .modal-backdrop.hidden, .tab-content.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+            will-change: transform;
+        }
+        .modal-backdrop.hidden .modal-content {
+            transform: scale(0.95);
+        }
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .shake {
+            animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.5rem;
+        }
+        #qrcode img {
+            max-width: 100%;
+            height: auto;
+        }
+        #qr-reader {
+            width: 100%;
+            border: none;
+            border-radius: 0.5rem;
+        }
+        #captcha-display {
+            background-color: #2d3748;
+            color: #a0aec0;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1.5rem;
+            letter-spacing: 0.3em;
+            text-decoration: line-through;
+            user-select: none;
+        }
+        
+        /* --- Light Theme Overrides --- */
+        body.light-theme { background-color: #f3f4f6; }
+        body.light-theme #app-container { background-color: #FFFFFF; color: #111827; }
+        body.light-theme #theme-toggle-btn, body.light-theme .back-button { color: #6B7280; }
+        body.light-theme #theme-toggle-btn:hover, body.light-theme .back-button:hover { color: #111827; }
+        body.light-theme header, body.light-theme footer { border-color: #E5E7EB; }
+        body.light-theme .tab-btn { color: #6B7280; }
+        body.light-theme .tab-btn.border-blue-500 { color: #3B82F6; border-color: #3B82F6; }
+        body.light-theme .text-gray-400 { color: #6B7280; }
+        body.light-theme .text-gray-500 { color: #4B5563; }
+        body.light-theme .bg-\[\#121212\] { background-color: #FFFFFF; }
+        body.light-theme .bg-\[\#222\] { background-color: #F3F4F6; }
+        body.light-theme input, body.light-theme .bg-\[\#333\] { color: #1F2937; background-color: #F3F4F6; }
+        body.light-theme input::placeholder { color: #9CA3AF; }
+        body.light-theme .border-gray-700\/50 { border-color: #E5E7EB; }
+        body.light-theme #accounts-list .hover\:bg-gray-800\/50:hover { background-color: #F3F4F6; }
+        body.light-theme .bg-gray-600 { background-color: #E5E7EB; color: #374151; }
+        body.light-theme .bg-gray-600:hover { background-color: #D1D5DB; }
+        body.light-theme .bg-gray-900\/50 { background-color: #E5E7EB; }
+        body.light-theme .modal-backdrop { background-color: rgba(0,0,0,0.4); }
+        body.light-theme .modal-content { background-color: #FFFFFF; }
+        body.light-theme #captcha-display, body.light-theme #kyc-modal .modal-content { background-color: #e5e7eb; color: #374151; text-decoration: none; font-weight: 600; }
+        body.light-theme #refresh-captcha-btn { background-color: #d1d5db; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="app-container" class="w-full max-w-md bg-[#121212] text-white rounded-2xl shadow-2xl flex flex-col h-[85vh] overflow-hidden relative">
+        
+        <a href="main.html" title="Go Back" class="back-button absolute top-4 left-4 z-20 text-gray-400 hover:text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        </a>
+
+        <button id="theme-toggle-btn" class="absolute top-4 right-4 z-20 text-gray-400 hover:text-white transition-colors">
+            <svg id="theme-icon-sun" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M12 18a6 6 0 100-12 6 6 0 000 12z" /></svg>
+            <svg id="theme-icon-moon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+        </button>
+
+        <div id="main-app-view" class="flex flex-col h-full">
+            <header class="p-4 flex justify-around items-center border-b border-gray-700/50">
+                <button data-tab="send" class="tab-btn font-semibold text-lg pb-2 border-b-2 border-blue-500 text-blue-500">Send</button>
+                <button data-tab="receive" class="tab-btn font-semibold text-lg pb-2 border-b-2 border-transparent text-gray-500">Receive</button>
+            </header>
+
+            <div class="flex-grow overflow-y-auto relative">
+                <div id="send-tab-content" class="tab-content">
+                    <div id="send-view" class="view flex flex-col flex-grow w-full p-4">
+                        <div class="mb-4">
+                            <label class="text-sm text-gray-400 mb-2 block">From:</label>
+                            <div class="bg-[#222] p-3 rounded-lg flex justify-between items-center cursor-pointer">
+                                <div class="flex items-center"><div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 mr-3"></div><div><p class="font-semibold" id="from-account-name"></p><p class="text-xs text-gray-400" id="from-account-balance">Balance: 0 ETH</p></div></div>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <label class="text-sm text-gray-400 mb-2 block">To:</label>
+                            <div class="relative">
+                                <input id="recipient-address-input" type="text" class="w-full bg-[#222] p-3 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-24" placeholder="Search, public address, or ENS">
+                                <button id="verify-btn" class="absolute right-12 top-1/2 -translate-y-1/2 text-blue-500 text-sm font-semibold flex items-center gap-1">Verify ✨</button>
+                                <span id="qr-scanner-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer"><svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 3H3v2h2V3zM9 3H7v2h2V3zM13 3h-2v2h2V3zM17 3h-2v2h2V3zM21 3h-2v2h2V3zM5 7H3v2h2V7zM9 7H7v2h2V7zM13 7h-2v2h2V7zM17 7h-2v2h2V7zM21 7h-2v2h2V7zM5 11H3v2h2v-2zM9 11H7v2h2v-2zM13 11h-2v2h2v-2zM17 11h-2v2h2v-2zM21 11h-2v2h2v-2zM5 15H3v2h2v-2zM9 15H7v2h2v-2zM13 15h-2v2h2v-2zM17 15h-2v2h2v-2zM21 15h-2v2h2v-2zM5 19H3v2h2v-2zM9 19H7v2h2v-2zM13 19h-2v2h2v-2zM17 19h-2v2h2v-2zM21 19h-2v2h2v-2z" fill="currentColor"></path></svg></span>
+                            </div>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-3">Your Accounts</h3>
+                        <div id="accounts-list" class="space-y-3"></div>
+                        <footer class="p-4 mt-auto"><button id="send-next-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200 disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Next</button></footer>
+                    </div>
+                </div>
+
+                <div id="receive-tab-content" class="tab-content hidden p-4">
+                    <div id="kyc-prompt-view" class="hidden h-full flex flex-col items-center justify-center text-center">
+                        <h3 class="text-xl font-bold mb-2">Verification Required</h3>
+                        <p class="text-gray-400 mb-6 px-4">To receive funds, you need to complete a one-time KYC verification.</p>
+                        <button id="start-kyc-btn" class="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full">Start KYC Verification</button>
+                    </div>
+                    <div id="receive-qr-view" class="hidden text-center">
+                        <h3 class="text-lg font-semibold mb-4">Your Wallet Address</h3>
+                        <div class="w-48 h-48 mx-auto mb-4" id="qrcode"></div>
+                        <div class="bg-[#222] p-3 rounded-lg mb-4">
+                            <p id="wallet-address" class="text-sm break-all"></p>
+                        </div>
+                        <button id="copy-address-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200">Copy Address</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="overlay-container" class="absolute inset-0 pointer-events-none">
+                <div id="amount-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto">
+                     <header class="p-4 flex justify-between items-center border-b border-gray-700/50"><button id="amount-back-btn" class="text-blue-500 font-semibold">Back</button><h2 class="font-semibold text-lg">Amount</h2><button class="text-blue-500 font-semibold cancel-btn">Cancel</button></header>
+                    <main class="p-4 flex-grow flex flex-col items-center justify-center text-center">
+                        <button id="select-token-btn" class="flex items-center justify-center gap-2 mb-4">
+                            <div id="selected-token-icon-container" class="w-8 h-8"></div>
+                            <span id="selected-token-symbol" class="text-2xl font-bold"></span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <input id="amount-input" type="text" value="0" class="bg-transparent text-6xl font-bold text-center w-full focus:outline-none mb-2">
+                        <p id="amount-balance" class="text-sm text-gray-400 mb-4"></p>
+                    </main>
+                    <footer class="p-4 mt-auto border-t border-gray-700/50"><button id="amount-next-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200 disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Next</button></footer>
+                </div>
+                <div id="token-select-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto">
+                    <header class="p-4 flex justify-between items-center border-b border-gray-700/50">
+                        <button id="token-select-back-btn" class="text-blue-500 font-semibold">Back</button>
+                        <h2 class="font-semibold text-lg">Select a token</h2>
+                        <div></div>
+                    </header>
+                    <main id="token-list" class="p-4 flex-grow overflow-y-auto space-y-2"></main>
+                </div>
+                <div id="qr-scanner-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto">
+                    <header class="p-4 flex justify-between items-center border-b border-gray-700/50">
+                        <h2 class="font-semibold text-lg">Scan QR Code</h2>
+                        <button id="close-scanner-btn" class="text-blue-500 font-semibold">Cancel</button>
+                    </header>
+                    <main class="p-4 flex-grow flex flex-col items-center justify-center">
+                        <div id="qr-reader" class="w-full md:w-96"></div>
+                    </main>
+                </div>
+                <div id="confirm-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto">
+                     <header class="p-4 flex justify-between items-center border-b border-gray-700/50"><button id="confirm-back-btn" class="text-blue-500 font-semibold">Back</button><h2 class="font-semibold text-lg">Confirm</h2><button class="text-blue-500 font-semibold cancel-btn">Cancel</button></header>
+                    <main class="p-4 flex-grow overflow-y-auto">
+                        <div class="bg-[#222] p-4 rounded-lg text-center mb-4"><p id="confirm-amount" class="font-bold text-4xl"></p><p id="confirm-amount-usd" class="text-gray-400"></p></div>
+                        <div class="bg-[#222] p-3 rounded-lg space-y-3"><div><p class="text-sm text-gray-400">From</p><p id="confirm-from" class="font-semibold break-words"></p></div><hr class="border-gray-700"><div><p class="text-sm text-gray-400">To</p><p id="confirm-to" class="font-semibold break-words"></p></div></div>
+                        <div class="bg-[#222] p-3 rounded-lg mt-4"><div class="flex justify-between items-center"><p class="text-sm text-gray-400">Network fee</p><button id="explain-gas-btn" class="text-blue-500 text-xs font-semibold flex items-center gap-1">What's this? ✨</button></div><p id="confirm-gas" class="font-semibold"></p><div id="gas-options" class="flex justify-between items-center bg-gray-900/50 rounded-full p-1 mt-2 text-sm"><button data-gas="0.00021" class="gas-option w-full rounded-full p-1 bg-blue-600">Market</button><button data-gas="0.00018" class="gas-option w-full rounded-full p-1">Aggressive</button><button data-gas="0.00015" class="gas-option w-full rounded-full p-1">Slow</button></div></div>
+                    </main>
+                    <footer class="p-4 mt-auto border-t border-gray-700/50 space-y-4"><div class="flex justify-between font-bold text-lg"><p>Total</p><p id="confirm-total"></p></div><div class="grid grid-cols-2 gap-4"><button id="reject-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200">Reject</button><button id="final-confirm-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200">Confirm</button></div></footer>
+                </div>
+                <div id="sending-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto items-center justify-center text-center">
+                    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div><h2 class="text-2xl font-bold">Sending...</h2><p id="sending-amount" class="text-gray-400"></p>
+                </div>
+                <div id="complete-view" class="view hidden flex-col flex-grow w-full absolute inset-0 bg-[#121212] pointer-events-auto items-center justify-center text-center p-4">
+                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg></div>
+                    <h2 class="text-2xl font-bold">Transaction Submitted!</h2><a id="etherscan-link" href="#" target="_blank" class="text-blue-500 hover:underline mt-2">View on Etherscan</a>
+                    <div class="w-full mt-6 space-y-2"><button id="notify-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200 flex items-center justify-center gap-2">Notify Recipient ✨</button><button id="done-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-full transition-colors duration-200">Done</button></div>
+                </div>
+                <div id="ai-modal" class="modal-backdrop hidden absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-10 pointer-events-auto">
+                    <div class="modal-content bg-[#222] rounded-lg p-6 w-full max-w-sm"><h3 id="ai-modal-title" class="font-semibold text-lg mb-4 text-center"></h3><div id="ai-modal-content"></div><button id="close-ai-modal-btn" class="mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded-full w-full">Close</button></div>
+                </div>
+                <div id="captcha-modal" class="modal-backdrop hidden absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-20 pointer-events-auto">
+                    <div class="modal-content bg-[#222] rounded-lg p-6 w-full max-w-sm space-y-4">
+                        <h3 class="font-semibold text-lg text-center">Security Check</h3>
+                        <p class="text-sm text-gray-400 text-center">Please enter the text below to proceed.</p>
+                        <div class="flex items-center gap-4">
+                            <div id="captcha-display" class="flex-grow text-center"></div>
+                            <button id="refresh-captcha-btn" class="p-2 bg-gray-700 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg></button>
+                        </div>
+                        <input id="captcha-input" type="text" class="w-full bg-[#333] p-3 rounded-lg placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter CAPTCHA">
+                        <p id="captcha-error" class="text-red-500 text-sm h-4"></p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="cancel-captcha-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-full">Cancel</button>
+                            <button id="submit-captcha-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full">Submit</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="kyc-modal" class="modal-backdrop hidden absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-20 pointer-events-auto">
+                    <div class="modal-content bg-[#222] rounded-lg p-6 w-full max-w-sm space-y-4 text-center">
+                        <h3 class="font-semibold text-lg">KYC Verification</h3>
+                        <div id="kyc-loading">
+                            <p class="text-sm text-gray-400 mb-4">Simulating KYC process with a provider...</p>
+                            <div class="flex justify-center items-center h-24"><div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>
+                        </div>
+                        <div id="kyc-complete" class="hidden">
+                             <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4 mx-auto"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg></div>
+                            <p class="text-lg font-semibold text-green-400">Verification Complete!</p>
+                        </div>
+                        <button id="complete-kyc-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-full hidden">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 3D BACKGROUND SETUP ---
+            let scene, camera, renderer, particles, lines;
+            function init3DBackground() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 250;
+                renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+                renderer.setClearColor(0x1f2937, 1);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                const particleCount = 200;
+                const particleGeometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                const velocities = [];
+
+                for (let i = 0; i < particleCount; i++) {
+                    positions[i * 3] = (Math.random() - 0.5) * 800;
+                    positions[i * 3 + 1] = (Math.random() - 0.5) * 800;
+                    positions[i * 3 + 2] = (Math.random() - 0.5) * 800;
+                    velocities.push({ x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.5, z: (Math.random() - 0.5) * 0.5 });
+                }
+                particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                particleGeometry.userData.velocities = velocities;
+                
+                const particleMaterial = new THREE.PointsMaterial({ color: 0x3B82F6, size: 2, transparent: true, opacity: 0.7 });
+                particles = new THREE.Points(particleGeometry, particleMaterial);
+                scene.add(particles);
+
+                const lineGeometry = new THREE.BufferGeometry();
+                const linePositions = new Float32Array(particleCount * particleCount * 3);
+                lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+                const lineMaterial = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.1 });
+                lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+                scene.add(lines);
+
+                window.addEventListener('resize', onWindowResize, false);
+                document.addEventListener('mousemove', onDocumentMouseMove, false);
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function onDocumentMouseMove(event) {
+                const mouseX = (event.clientX - window.innerWidth / 2);
+                const mouseY = (event.clientY - window.innerHeight / 2);
+                camera.position.x += (mouseX - camera.position.x) * 0.01;
+                camera.position.y += (-mouseY - camera.position.y) * 0.01;
+                camera.lookAt(scene.position);
+            }
+
+            function animate3D() {
+                requestAnimationFrame(animate3D);
+                const particlePositions = particles.geometry.attributes.position;
+                const linePositions = lines.geometry.attributes.position;
+                const velocities = particles.geometry.userData.velocities;
+                let lineVertexIndex = 0;
+                
+                for (let i = 0; i < particlePositions.count; i++) {
+                    particlePositions.array[i * 3] += velocities[i].x;
+                    particlePositions.array[i * 3 + 1] += velocities[i].y;
+                    particlePositions.array[i * 3 + 2] += velocities[i].z;
+                    if (Math.abs(particlePositions.array[i * 3]) > 400) velocities[i].x *= -1;
+                    if (Math.abs(particlePositions.array[i * 3 + 1]) > 400) velocities[i].y *= -1;
+                    if (Math.abs(particlePositions.array[i * 3 + 2]) > 400) velocities[i].z *= -1;
+                    
+                    for (let j = i + 1; j < particlePositions.count; j++) {
+                        const dx = particlePositions.array[i * 3] - particlePositions.array[j * 3];
+                        const dy = particlePositions.array[i * 3 + 1] - particlePositions.array[j * 3 + 1];
+                        const dz = particlePositions.array[i * 3 + 2] - particlePositions.array[j * 3 + 2];
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                        
+                        if (dist < 100) {
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3];
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3 + 1];
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3 + 2];
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3];
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3 + 1];
+                            linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3 + 2];
+                        }
+                    }
+                }
+                for (let i = lineVertexIndex; i < linePositions.array.length; i++) { linePositions.array[i] = 0; }
+                particlePositions.needsUpdate = true;
+                linePositions.needsUpdate = true;
+                lines.geometry.setDrawRange(0, lineVertexIndex / 3);
+                renderer.render(scene, camera);
+            }
+            
+            // --- MAIN APP LOGIC ---
+             const ETH_PRICE_USD = 3500;
+             const defaultUser = {
+                 account: { name: 'Account 1', address: '0x64A80EFBf4CAAb416Ce9f07F9Df3a306004E2597', avatar: 'bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600' }
+             };
+             const tokens = [
+                 { symbol: 'ETH', name: 'Ethereum', balance: 1.5, price: 3500, icon: '<svg class="w-full h-full" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="m16 0-1.2 2.3-6.2 10.1-8.6 4.3 16 15.3 16-15.3-8.6-4.3-6.2-10.1z" fill="#343434"/><path d="m16 0-16 16.7 16 15.3v-21.7z" fill="#8c8c8c"/><path d="m16 0v32l16-15.3z" fill="#3c3c3b"/><path d="m16 21.7-16-5 16-4.3z" fill="#8c8c8c"/><path d="m16 12.4-7.4 4.3-1.2-2.3 8.6-4.3z" fill="#343434"/><path d="m16 12.4v9.3l16-5z" fill="#3c3c3b"/></svg>' },
+                 { symbol: 'USDT', name: 'Tether', balance: 500.75, price: 1, icon: '<svg class="w-full h-full" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#26A17B"/><path d="M16.48 7.36h5.84v3.36h-2.4v10.56h-3.44V10.72h-2.4V7.36zM9.68 7.36h5.84v3.36h-2.4v10.56H9.68V7.36z" fill="#fff"/></svg>' },
+                 { symbol: 'USDC', name: 'USD Coin', balance: 1250.00, price: 1, icon: '<svg class="w-full h-full" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775ca"/><path d="M16 24.8a8.8 8.8 0 1 1 0-17.6 8.8 8.8 0 0 1 0 17.6zm0-3.36a5.44 5.44 0 1 0 0-10.88 5.44 5.44 0 0 0 0 10.88z" fill="#fff"/><path d="M17.36 18.48h-3.2v1.44h-1.6V12h1.6v5.12h3.2v-5.12h1.6V19.92h-1.6v-1.44z" fill="#fff"/></svg>' },
+                 { symbol: 'DAI', name: 'Dai', balance: 800.20, price: 1, icon: '<svg class="w-full h-full" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#F4B731"/><path d="M16 4.4L4.4 16 16 27.6 27.6 16 16 4.4z" fill="#fff"/><path d="M16 7.36L7.36 16 16 24.64 24.64 16 16 7.36z" fill="#F4B731"/></svg>' }
+             ];
+             const state = {
+                 currentUser: defaultUser,
+                 to: '', amount: 0, gasFee: 0.00021, txHash: '',
+                 selectedToken: tokens[0],
+                 isAddressVerifiedSafe: false,
+                 html5QrCode: null,
+                 captchaText: '',
+                 postCaptchaAction: null,
+                 kycCompleted: JSON.parse(localStorage.getItem('kycCompleted')) || false,
+                 accounts: [
+                     { name: 'Account No', address: 'xxxxxxxx', avatar: 'bg-gradient-to-br from-orange-400 via-amber-500 to-yellow-600' },
+                     { name: 'Account No', address: 'xxxxxxxx', avatar: 'bg-gradient-to-tr from-purple-400 to-indigo-500' },
+                     { name: 'Account No', address: 'xxxxxxxx', avatar: 'bg-gradient-to-br from-fuchsia-500 to-cyan-500' }
+                 ]
+             };
+             const views = { send: document.getElementById('send-view'), amount: document.getElementById('amount-view'), confirm: document.getElementById('confirm-view'), sending: document.getElementById('sending-view'), complete: document.getElementById('complete-view'), tokenSelect: document.getElementById('token-select-view'), qrScanner: document.getElementById('qr-scanner-view') };
+             const recipientInput = document.getElementById('recipient-address-input');
+             const amountInput = document.getElementById('amount-input');
+             const accountsList = document.getElementById('accounts-list');
+             const aiModal = document.getElementById('ai-modal');
+             const captchaModal = document.getElementById('captcha-modal');
+             const kycModal = document.getElementById('kyc-modal');
+             const themeToggleBtn = document.getElementById('theme-toggle-btn');
+             const sunIcon = document.getElementById('theme-icon-sun');
+             const moonIcon = document.getElementById('theme-icon-moon');
+             const buttons = {
+                 sendNext: document.getElementById('send-next-btn'), amountBack: document.getElementById('amount-back-btn'), amountNext: document.getElementById('amount-next-btn'), confirmBack: document.getElementById('confirm-back-btn'), verify: document.getElementById('verify-btn'), closeAiModal: document.getElementById('close-ai-modal-btn'), explainGas: document.getElementById('explain-gas-btn'), finalConfirm: document.getElementById('final-confirm-btn'), reject: document.getElementById('reject-btn'), done: document.getElementById('done-btn'), notify: document.getElementById('notify-btn'), copyAddress: document.getElementById('copy-address-btn'), selectToken: document.getElementById('select-token-btn'), tokenSelectBack: document.getElementById('token-select-back-btn'), qrScanner: document.getElementById('qr-scanner-btn'), closeScanner: document.getElementById('close-scanner-btn'),
+                 refreshCaptcha: document.getElementById('refresh-captcha-btn'), submitCaptcha: document.getElementById('submit-captcha-btn'), cancelCaptcha: document.getElementById('cancel-captcha-btn'),
+                 startKyc: document.getElementById('start-kyc-btn'), completeKyc: document.getElementById('complete-kyc-btn')
+             };
+             const tabContents = { send: document.getElementById('send-tab-content'), receive: document.getElementById('receive-tab-content') };
+             const receiveViews = { kyc: document.getElementById('kyc-prompt-view'), qr: document.getElementById('receive-qr-view') };
+             const resetState = () => { recipientInput.value = ''; amountInput.value = '0'; state.to = ''; state.amount = 0; state.gasFee = 0.00021; state.txHash = ''; state.selectedToken = tokens[0]; state.isAddressVerifiedSafe = false; updateAmountView(); validateSendView(); validateAmountView(); navigateTo('send'); switchTab('send'); };
+             const renderAccounts = () => { accountsList.innerHTML = ''; state.accounts.forEach(acc => { const accEl = document.createElement('div'); accEl.className = 'flex items-center p-2 rounded-lg hover:bg-gray-800/50 cursor-pointer'; accEl.innerHTML = `<div class="w-10 h-10 rounded-full ${acc.avatar} mr-3"></div><div><p class="font-semibold">${acc.name}</p><p class="text-sm text-gray-400">${acc.address.substring(0,6)}...${acc.address.substring(acc.address.length - 4)}</p></div>`; accEl.addEventListener('click', () => { recipientInput.value = acc.address; state.isAddressVerifiedSafe = false; validateSendView(); }); accountsList.appendChild(accEl); }); };
+             const renderTokens = () => { const tokenListEl = document.getElementById('token-list'); tokenListEl.innerHTML = ''; tokens.forEach(token => { const tokenEl = document.createElement('div'); tokenEl.className = 'flex items-center p-3 rounded-lg hover:bg-gray-800/50 cursor-pointer'; tokenEl.innerHTML = `<div class="w-10 h-10 mr-3">${token.icon}</div><div class="flex-grow"><p class="font-semibold">${token.symbol}</p><p class="text-sm text-gray-400">${token.name}</p></div><div><p class="font-semibold">${token.balance.toFixed(2)}</p><p class="text-sm text-gray-400 text-right">$${(token.balance * token.price).toFixed(2)}</p></div>`; tokenEl.addEventListener('click', () => { state.selectedToken = token; updateAmountView(); navigateTo('amount'); }); tokenListEl.appendChild(tokenEl); }); };
+             const updateAmountView = () => { document.getElementById('selected-token-icon-container').innerHTML = state.selectedToken.icon; document.getElementById('selected-token-symbol').textContent = state.selectedToken.symbol; document.getElementById('amount-balance').textContent = `Balance: ${state.selectedToken.balance.toFixed(2)} ${state.selectedToken.symbol}`; };
+             const navigateTo = (viewName) => { Object.values(views).forEach(v => v.classList.add('hidden')); if (views[viewName]) views[viewName].classList.remove('hidden'); };
+             const updateConfirmationDetails = () => { document.getElementById('confirm-amount').textContent = `${state.amount} ${state.selectedToken.symbol}`; document.getElementById('confirm-amount-usd').textContent = `$${(state.amount * state.selectedToken.price).toFixed(2)} USD`; document.getElementById('confirm-from').textContent = state.currentUser.account.name; document.getElementById('confirm-to').textContent = state.to; document.getElementById('confirm-gas').textContent = `~${state.gasFee.toFixed(5)} ETH`; const total = (state.amount * state.selectedToken.price) + (state.gasFee * ETH_PRICE_USD); document.getElementById('confirm-total').textContent = `~ $${total.toFixed(2)} USD`; };
+             buttons.sendNext.addEventListener('click', () => { state.to = recipientInput.value; navigateTo('amount'); }); buttons.amountBack.addEventListener('click', () => navigateTo('send')); buttons.amountNext.addEventListener('click', () => { state.amount = parseFloat(amountInput.value) || 0; updateConfirmationDetails(); navigateTo('confirm'); }); buttons.confirmBack.addEventListener('click', () => navigateTo('amount')); buttons.selectToken.addEventListener('click', () => navigateTo('tokenSelect')); buttons.tokenSelectBack.addEventListener('click', () => navigateTo('amount'));
+             const proceedWithTransaction = () => { captchaModal.classList.add('hidden'); document.getElementById('sending-amount').textContent = `${state.amount} ${state.selectedToken.symbol} to ${state.to.substring(0, 6)}...`; navigateTo('sending'); setTimeout(() => { state.txHash = '0x' + [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join(''); document.getElementById('etherscan-link').href = `https://etherscan.io/tx/${state.txHash}`; navigateTo('complete'); }, 2500); };
+             buttons.done.addEventListener('click', resetState); buttons.reject.addEventListener('click', resetState); document.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', resetState));
+             const validateSendView = () => { const hasAddress = recipientInput.value.trim() !== ''; buttons.sendNext.disabled = !hasAddress || !state.isAddressVerifiedSafe; }; const validateAmountView = () => { const amount = parseFloat(amountInput.value); buttons.amountNext.disabled = isNaN(amount) || amount <= 0 || amount > state.selectedToken.balance; };
+             recipientInput.addEventListener('input', () => { state.isAddressVerifiedSafe = false; validateSendView(); }); amountInput.addEventListener('input', validateAmountView);
+             const mockCallGeminiApi = (prompt) => new Promise(resolve => setTimeout(() => { const addressMatch = prompt.match(/"(.*?)"/); const address = addressMatch ? addressMatch[1] : ''; if (prompt.includes('security risks')) { if (/^0x[a-fA-F0-9]{40}$/.test(address) || address.toLowerCase().includes('safe')) { resolve("ETHEREUM: SAFE: No known malicious activity found for this address."); } else if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$/.test(address) || /^(bc1p)[a-zA-HJ-NP-Z0-9]{58,}$/.test(address)) { resolve("BITCOIN: SAFE: This appears to be a valid Bitcoin address with no known risks."); } else if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) { resolve("SOLANA: SAFE: This appears to be a valid Solana address with no known risks."); } else if (/^union1[a-z0-9]{38}$/.test(address)) { resolve("COSMOS: SAFE: This appears to be a valid Cosmos address with no known risks."); } else if (prompt.toLowerCase().includes('caution')) { resolve("ETHEREUM: CAUTION: This address has been associated with airdrop farming. Proceed with care."); } else if (prompt.toLowerCase().includes('scam')) { resolve("ETHEREUM: HIGH RISK: This address is on a known phishing list. Do not send funds."); } else { resolve("UNKNOWN: INVALID: The address format is not recognized. Please double-check it."); } } else if (prompt.includes('gas fees')) { resolve("Gas fees are payments for processing your transaction on the Ethereum network. They change based on how busy the network is."); } else if (prompt.includes('notify someone')) { resolve(`Hey! Just sent you ${state.amount} ${state.selectedToken.symbol}. Transaction hash: ${state.txHash}.`); } else { resolve("Could not generate a response for this prompt."); } }, 1000));
+             const openAiModal = (title) => { aiModal.classList.remove('hidden'); aiModal.querySelector('#ai-modal-title').textContent = title; aiModal.querySelector('#ai-modal-content').innerHTML = `<div class="flex justify-center items-center h-24"><div class="spinner !w-8 !h-8"></div></div>`; };
+             buttons.verify.addEventListener('click', async () => { const address = recipientInput.value.trim(); state.isAddressVerifiedSafe = false; if (!address) { recipientInput.classList.add('shake'); setTimeout(() => recipientInput.classList.remove('shake'), 820); return; } openAiModal('Verifying Address...'); const result = await mockCallGeminiApi(`Analyze the cryptocurrency address "${address}" for security risks.`); let network = 'UNKNOWN', risk = 'ERROR', explanation = 'Could not parse AI response.', colorClass = 'text-red-500'; if (result && result.includes(':')) { const parts = result.split(':'); if (parts.length >= 3) { network = parts[0].trim(); risk = parts[1].trim().toUpperCase(); explanation = parts.slice(2).join(':').trim(); if (risk.includes('SAFE')) { colorClass = 'text-green-400'; state.isAddressVerifiedSafe = true; } else if (risk.includes('CAUTION')) { colorClass = 'text-yellow-400'; } else if (risk.includes('HIGH RISK') || risk.includes('INVALID')) { colorClass = 'text-red-500'; } else { colorClass = 'text-gray-300'; } } else { explanation = result; } } else if (result) { explanation = result; } validateSendView(); aiModal.querySelector('#ai-modal-content').innerHTML = `<div class="text-xs text-gray-400 font-semibold mb-2">${network} NETWORK</div><h3 class="font-bold text-2xl mb-2 ${colorClass} text-center">${risk}</h3><p class="text-gray-300 text-center">${explanation}</p>`; });
+             const onScanSuccess = (decodedText, decodedResult) => { let address = decodedText; if (address.includes(':')) { const parts = address.split(':'); address = parts[1] || ''; } if (address.includes('?')) { address = address.split('?')[0]; } const isValid = /^(0x[a-fA-F0-9]{40})|^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$|^(bc1p)[a-zA-HJ-NP-Z0-9]{58,}$|^[1-9A-HJ-NP-Za-km-z]{32,44}$|^union1[a-z0-9]{38}$/.test(address); stopScanner(); if (isValid) { recipientInput.value = address; state.isAddressVerifiedSafe = false; validateSendView(); } else { openAiModal('Invalid QR Code'); aiModal.querySelector('#ai-modal-content').innerHTML = `<h3 class="font-bold text-2xl mb-2 text-red-500 text-center">SCAN FAILED</h3><p class="text-gray-300 text-center">This QR code does not contain a valid cryptocurrency address.</p>`; } };
+             const stopScanner = () => { if (state.html5QrCode && state.html5QrCode.isScanning) { state.html5QrCode.stop().then(() => { navigateTo('send'); }).catch(err => console.error("Error stopping scanner:", err)); } else { navigateTo('send'); } };
+             buttons.qrScanner.addEventListener('click', () => { navigateTo('qrScanner'); state.html5QrCode = new Html5Qrcode("qr-reader"); const config = { fps: 10, qrbox: { width: 250, height: 250 } }; state.html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess).catch(err => { console.error("Unable to start scanning.", err); aiModal.querySelector('#ai-modal-content').innerHTML = `<h3 class="font-bold text-2xl mb-2 text-red-500 text-center">CAMERA ERROR</h3><p class="text-gray-300 text-center">Could not access camera. Please grant permission.</p>`; openAiModal('Error'); }); });
+             buttons.closeScanner.addEventListener('click', stopScanner);
+             buttons.explainGas.addEventListener('click', async () => { openAiModal('Understanding Gas Fees'); const result = await mockCallGeminiApi("Explain Ethereum gas fees."); aiModal.querySelector('#ai-modal-content').innerHTML = `<p class="text-gray-300 text-left">${result}</p>`; });
+             buttons.notify.addEventListener('click', async () => { openAiModal('Generate Notification'); const result = await mockCallGeminiApi(`Generate a short, friendly message to notify someone.`); aiModal.querySelector('#ai-modal-content').innerHTML = `<textarea id="notification-text" class="w-full bg-[#333] p-2 rounded-md text-white h-32">${result}</textarea><button id="copy-notification-btn" class="w-full mt-2 bg-gray-600 p-2 rounded-md">Copy</button>`; document.getElementById('copy-notification-btn').addEventListener('click', () => { const textArea = document.getElementById('notification-text'); textArea.select(); document.execCommand('copy'); const copyBtn = document.getElementById('copy-notification-btn'); copyBtn.textContent = 'Copied!'; setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000); }); });
+             buttons.closeAiModal.addEventListener('click', () => { aiModal.classList.add('hidden'); });
+             document.getElementById('gas-options').addEventListener('click', (e) => { if (e.target.classList.contains('gas-option')) { document.querySelectorAll('.gas-option').forEach(btn => btn.classList.remove('bg-blue-600')); e.target.classList.add('bg-blue-600'); state.gasFee = parseFloat(e.target.dataset.gas); updateConfirmationDetails(); } });
+             const generateQRCode = () => { const qrEl = document.getElementById("qrcode"); if (qrEl.innerHTML === '') new QRCode(qrEl, { text: state.currentUser.account.address, width: 160, height: 160, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); };
+             const switchTab = (tabName) => { document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.remove('text-blue-500', 'border-blue-500'); btn.classList.add('text-gray-500', 'border-transparent'); }); document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('text-blue-500', 'border-blue-500'); Object.values(tabContents).forEach(content => content.classList.add('hidden')); if (tabContents[tabName]) tabContents[tabName].classList.remove('hidden'); if (tabName === 'receive') { if (state.kycCompleted) { receiveViews.kyc.classList.add('hidden'); receiveViews.qr.classList.remove('hidden'); generateQRCode(); } else { receiveViews.qr.classList.add('hidden'); receiveViews.kyc.classList.remove('hidden'); } } };
+             document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+             const copyAddressAction = () => { navigator.clipboard.writeText(state.currentUser.account.address).then(() => { buttons.copyAddress.textContent = 'Copied!'; setTimeout(() => { buttons.copyAddress.textContent = 'Copy Address'; }, 2000); }).catch(err => console.error('Failed to copy!', err)); captchaModal.classList.add('hidden'); };
+             buttons.copyAddress.addEventListener('click', () => { state.postCaptchaAction = 'copy'; generateCaptcha(); captchaModal.classList.remove('hidden'); });
+             const captchaInput = document.getElementById('captcha-input'); const captchaDisplay = document.getElementById('captcha-display'); const captchaError = document.getElementById('captcha-error');
+             const generateCaptcha = () => { const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let captcha = ''; for (let i = 0; i < 5; i++) captcha += chars.charAt(Math.floor(Math.random() * chars.length)); state.captchaText = captcha; captchaDisplay.textContent = captcha; captchaError.textContent = ''; captchaInput.value = ''; };
+             buttons.refreshCaptcha.addEventListener('click', generateCaptcha); buttons.cancelCaptcha.addEventListener('click', () => captchaModal.classList.add('hidden')); buttons.finalConfirm.addEventListener('click', () => { state.postCaptchaAction = 'send'; generateCaptcha(); captchaModal.classList.remove('hidden'); }); buttons.submitCaptcha.addEventListener('click', () => { if (captchaInput.value.toUpperCase() === state.captchaText.toUpperCase()) { if (state.postCaptchaAction === 'send') { proceedWithTransaction(); } else if (state.postCaptchaAction === 'copy') { copyAddressAction(); } } else { captchaError.textContent = 'Incorrect CAPTCHA. Try again.'; generateCaptcha(); } });
+             buttons.startKyc.addEventListener('click', () => { kycModal.classList.remove('hidden'); document.getElementById('kyc-loading').classList.remove('hidden'); document.getElementById('kyc-complete').classList.add('hidden'); buttons.completeKyc.classList.add('hidden'); setTimeout(() => { document.getElementById('kyc-loading').classList.add('hidden'); document.getElementById('kyc-complete').classList.remove('hidden'); buttons.completeKyc.classList.remove('hidden'); }, 2000); });
+             buttons.completeKyc.addEventListener('click', () => { state.kycCompleted = true; localStorage.setItem('kycCompleted', 'true'); kycModal.classList.add('hidden'); switchTab('receive'); });
+             const setTheme = (theme) => { if (theme === 'light') { document.body.classList.add('light-theme'); sunIcon.classList.add('hidden'); moonIcon.classList.remove('hidden'); localStorage.setItem('appTheme', 'light'); } else { document.body.classList.remove('light-theme'); sunIcon.classList.remove('hidden'); moonIcon.classList.add('hidden'); localStorage.setItem('appTheme', 'dark'); } };
+             themeToggleBtn.addEventListener('click', () => { const currentTheme = document.body.classList.contains('light-theme') ? 'dark' : 'light'; setTheme(currentTheme); });
+            
+             const init = () => {
+                 document.getElementById('from-account-name').textContent = state.currentUser.account.name;
+                 document.getElementById('from-account-balance').textContent = `Balance: ${tokens.find(t=>t.symbol==='ETH').balance} ETH`;
+                 document.getElementById('wallet-address').textContent = state.currentUser.account.address;
+                 resetState();
+                 renderAccounts();
+                 renderTokens();
+                 const savedTheme = localStorage.getItem('appTheme') || 'dark';
+                 setTheme(savedTheme);
+                 
+                 init3DBackground();
+                 animate3D();
+             };
+
+             init();
+        });
+    </script>
+</body>
+</html>

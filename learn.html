@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultPay - The Ultimate Web3 Learning Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Google Fonts for a modern look */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        /* Dark Theme CSS Variables (Default) */
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #1a202c;
+            --accent-color: #4cc9f0;
+            --bg-color: #121212;
+            --card-bg-color: #1e1e1e;
+            --text-color: #f0f2f5;
+            --light-text-color: #a0aec0;
+            --border-color: #2d3748;
+            --navbar-height: 70px;
+        }
+
+        /* Light Theme CSS Variables */
+        body.light-theme {
+            --primary-color: #4361ee;
+            --secondary-color: #f0f2f5;
+            --accent-color: #4361ee;
+            --bg-color: #ffffff;
+            --card-bg-color: #ffffff;
+            --text-color: #1a202c;
+            --light-text-color: #5a677d;
+            --border-color: #e2e8f0;
+        }
+
+        /* General Body Styling */
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.8;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: var(--navbar-height);
+            background-color: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 0 40px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        body.light-theme .navbar {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .navbar .logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--text-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .navbar .logo svg {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 35px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--light-text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+            padding-bottom: 5px;
+            cursor: pointer;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 50%;
+            background-color: var(--accent-color);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--text-color);
+        }
+        
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+        
+        /* Theme Toggle Button */
+        .theme-button {
+            background: none;
+            border: none;
+            color: var(--light-text-color);
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 5px;
+            transition: color 0.3s ease;
+        }
+        .theme-button:hover {
+            color: var(--accent-color);
+        }
+        
+        /* Page container for SPA simulation */
+        main > .page {
+            padding-top: var(--navbar-height);
+            display: none; /* Hidden by default */
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        main > .page.active {
+            display: block; /* Shown when active */
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero Section */
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            min-height: 100vh;
+            background: var(--secondary-color);
+            transition: background-color 0.3s;
+        }
+
+        .hero-content h1 {
+            font-size: 4em;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero-content .highlight {
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.3em;
+            color: var(--light-text-color);
+            max-width: 700px;
+            margin: 0 auto 40px auto;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 25px rgba(76, 201, 240, 0.25);
+        }
+        
+        /* General Section Styling */
+        .section {
+            padding: 100px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: 2.8em;
+            color: var(--text-color);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .section-title p {
+            color: var(--light-text-color);
+            font-size: 1.1em;
+        }
+
+        /* Card Styling for Courses/Projects */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s, background-color 0.3s;
+        }
+        
+        body.light-theme .card {
+             box-shadow: 0 4px 25px rgba(0,0,0,0.05);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            border-color: var(--accent-color);
+        }
+         body.light-theme .card:hover {
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card-image {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .card-content {
+            padding: 25px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tag {
+            background-color: var(--secondary-color);
+            color: var(--accent-color);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        .tag.hindi {
+            color: #fca311;
+        }
+        
+        .card h3 {
+            margin-top: 0;
+            color: var(--text-color);
+            font-size: 1.4em;
+        }
+        
+        .card p {
+            color: var(--light-text-color);
+            flex-grow: 1;
+        }
+
+        .card .button-link {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .card .button-link:hover {
+            background-color: #3b5bdb;
+        }
+        
+        /* Roadmap Accordion Styling */
+        .accordion {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .accordion-item {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .accordion-header {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+        .accordion-header:hover {
+            background-color: #2d3748;
+        }
+        body.light-theme .accordion-header {
+            background-color: #eef2f7;
+        }
+        body.light-theme .accordion-header:hover {
+            background-color: #e2e8f0;
+        }
+        .accordion-header h3 {
+            margin: 0;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .accordion-header .icon-toggle {
+            transition: transform 0.3s ease;
+        }
+        .accordion-item.active .accordion-header .icon-toggle {
+            transform: rotate(180deg);
+        }
+        .accordion-content {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+        }
+        .accordion-content .card {
+            margin: 20px 0;
+        }
+        
+        /* Blog / Project Guide Styling */
+        .project-guide {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 40px;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .project-guide h3 {
+            font-size: 2.2em;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .project-guide h4 {
+            font-size: 1.6em;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        .project-guide pre {
+            background-color: var(--secondary-color);
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        body.light-theme .project-guide pre {
+             background-color: #f8f9fa;
+             color: #1a202c;
+        }
+        .project-guide ul, .project-guide ol {
+            padding-left: 20px;
+        }
+        .project-guide li {
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--secondary-color);
+            color: #bdc3c7;
+            padding: 60px 0;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+         body.light-theme footer {
+             color: var(--light-text-color);
+         }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a data-page="home" class="logo nav-button">
+            <img src="ChatGPT Image Jul 26, 2025, 06_08_54 PM.png" alt="VaultPay Logo" style="height:40px; margin-right:10px; vertical-align:middle;">
+            <span>Learn With VaultPay</span>
+        </a>
+        <ul class="nav-links">
+            <li><a data-page="home" class="nav-button active">Home</a></li>
+            <li><a data-page="courses" class="nav-button">Courses</a></li>
+            <li><a data-page="blog" class="nav-button">Blog</a></li>
+            <li><button id="theme-toggle" class="theme-button"><i class="fas fa-sun"></i></button></li>
+        </ul>
+    </nav>
+
+    <main>
+        <div id="page-home" class="page active">
+            <div class="hero">
+                <div class="container">
+                    <div class="hero-content">
+                        <h1>Unlock the Future of the Web with <span class="highlight">VaultPay</span></h1>
+                        <p>Your all-in-one platform to master Web3, Blockchain, and DeFi. Start with our guided roadmap, dive into curated courses, and build real-world projects.</p>
+                        <a data-page="courses" class="cta-button nav-button">Start Your Journey</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-courses" class="page">
+            <div class="section">
+                <div class="container">
+                    <div class="section-title">
+                        <h2>Curated Course Library</h2>
+                        <p>Dive deeper with these specialized courses.</p>
+                    </div>
+                    <div class="grid-layout">
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Full+Solidity+Course');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Beginner</span></div>
+                                <h3>Full Solidity Course</h3><p>The legendary 32-hour course from Patrick Collins (freeCodeCamp). The most comprehensive resource available.</p>
+                                <a href="https://www.youtube.com/watch?v=gyMwXuJrbJQ" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/fca311?text=Blockchain+Explained');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Beginner</span></div>
+                                <h3>Blockchain Full Course</h3><p>Code Eater breaks down complex concepts of blockchain technology in simple, easy-to-understand English.</p>
+                                <a href="https://youtu.be/fF_yTe7h1hQ?si=PG0HkuyYTfnxoIz1" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=DeFi+Full+Course');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Advanced</span></div>
+                                <h3>DeFi Full Course</h3><p>A 16-hour course from Patrick Collins dedicated to DeFi. Build your own stablecoin, DEX, and lending protocol.</p>
+                                <a href="https://youtu.be/M576WGiDBdQ?si=yUGVxWXqXRPmHCOv" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Solana+Development');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Intermediate</span></div>
+                                <h3>Solana Development Course</h3><p>Explore the high-speed Solana ecosystem. This course teaches you to build DApps using Rust and the Anchor framework.</p>
+                                <a href="https://youtu.be/jcgfQEbptdo?si=ez4J9c8MIv5lKKzF" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=NFT+Marketplace');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Intermediate</span></div>
+                                <h3>NFT Marketplace Project</h3><p>Build a full-stack NFT marketplace from scratch with this project-based tutorial by JavaScript Mastery.</p>
+                                <a href="https://youtu.be/S3jJtGYI18E?si=Zoh5PVPKjWxwItz6" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Crypto+Trading');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Beginner</span></div>
+                                <h3>Crypto Trading Analysis</h3><p>A masterclass for beginners by Coin Bureau on how to perform technical analysis and read market charts.</p>
+                                <a href="https://youtu.be/1kvknZoU--M?si=papXdwKwxOo8sThg" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Web2+Fundamentals');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Beginner</span></div>
+                                <h3>Web2 Fundamentals (JS & React)</h3><p>Master the basics of web development with this excellent course on JavaScript and React before building DApp frontends.</p>
+                                <a href="https://youtu.be/ZaC6oCIpjR0?si=ZoAhsJrOyrlCt-Ho" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Smart+Contract+Auditing');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Advanced</span></div>
+                                <h3>Smart Contract Auditing</h3><p>Learn to find vulnerabilities and secure smart contracts. An essential skill for any serious blockchain developer.</p>
+                                <a href="https://youtu.be/pUWmJ86X_do?si=jDbjmlg-vWAskC8v" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Hardhat+For+Professionals');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Intermediate</span></div>
+                                <h3>Hardhat for Professionals</h3><p>Go beyond Remix IDE. Master Hardhat for professional smart contract development, testing, and deployment workflows.</p>
+                                <a href="https://youtu.be/H-yL6nloq3I?si=zk4PHb-D4AynJsJ4" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Mastering+Ethers.js');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Intermediate</span></div>
+                                <h3>Mastering Ethers.js</h3><p>Learn how to connect your website to the blockchain. Ethers.js is the most popular library for frontend DApp development.</p>
+                                <a href="https://youtu.be/XLkjkw0Y-ok?si=vCzWGYbPlUCx7rah" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=Understanding+Layer+2s');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Advanced</span></div>
+                                <h3>Understanding Layer 2s</h3><p>Go beyond Ethereum mainnet. Learn about scaling solutions like Polygon, Arbitrum, and Optimism to build faster, cheaper DApps.</p>
+                                <a href="https://youtu.be/VNMyGOA_LoY?si=vGybpHgYetsDVgrm" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-image" style="background-image: url('https://placehold.co/600x400/1a202c/4cc9f0?text=The+Graph+Protocol');"></div>
+                            <div class="card-content">
+                                <div class="card-tags"><span class="tag">English</span><span class="tag">Advanced</span></div>
+                                <h3>The Graph Protocol</h3><p>Learn to index and query blockchain data efficiently using The Graph. Essential for building complex DApps that require fast data retrieval.</p>
+                                <a href="https://youtu.be/McpESkh53uE?si=YQ22aHJ5b9X-JQzm" class="button-link" target="_blank">Watch Now <i class="fas fa-external-link-alt"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="page-blog" class="page">
+            <div class="section">
+                <div class="container">
+                    <div class="section-title">
+                        <h2>Project Guides & Articles</h2>
+                        <p>Detailed step-by-step instructions for our portfolio projects.</p>
+                    </div>
+
+                    <div id="project-guide-wish-jar" class="project-guide">
+                        <h3><i class="fas fa-gift"></i> Project Guide: The Blockchain Wish Jar</h3>
+                        <p>In this module, you will build a complete Decentralized Application from scratch. It's a "Wish Jar" where anyone in the world can store a wish on the blockchain forever by sending a small tip.</p>
+                        
+                        <h4><i class="fas fa-bullseye"></i> Learning Objectives</h4>
+                        <ul>
+                            <li>Write a complete, functional Smart Contract using Solidity.</li>
+                            <li>Understand and use structs, arrays, events, and payable functions.</li>
+                            <li>Compile and deploy your DApp to a live test network using the Remix IDE.</li>
+                            <li>Interact with your deployed DApp by sending transactions.</li>
+                        </ul>
+
+                        <h4><i class="fas fa-code"></i> Smart Contract: WishJar.sol</h4>
+                        <pre><code>// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract WishJar {
+    address public owner;
+    struct Wish {
+        address person;
+        string message;
+        uint256 timestamp;
+    }
+    Wish[] public wishes;
+    event NewWish(address indexed from, uint256 timestamp, string message);
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function makeWish(string memory _message) public payable {
+        require(msg.value >= 0.001 ether, "Send at least 0.001 ETH!");
+        require(bytes(_message).length > 0, "Message cannot be empty!");
+        wishes.push(Wish(msg.sender, _message, block.timestamp));
+        emit NewWish(msg.sender, block.timestamp, _message);
+    }
+
+    function getAllWishes() public view returns (Wish[] memory) {
+        return wishes;
+    }
+
+    function withdrawCoins() public {
+        require(msg.sender == owner, "Only the owner can withdraw.");
+        (bool success, ) = owner.call{value: address(this).balance}("");
+        require(success, "Withdrawal failed.");
+    }
+}</code></pre>
+                    </div>
+
+                    <div id="project-guide-nft" class="project-guide">
+                        <h3><i class="fas fa-image"></i> Project Guide: Create & Mint Your First NFT Collection</h3>
+                        <p>This project takes you through the entire process of creating a real-world NFT collection. You will learn to handle artwork, upload to decentralized storage (IPFS), write an ERC-721 smart contract, and build a simple minting DApp.</p>
+                        
+                        <h4><i class="fas fa-check-circle"></i> Key Steps</h4>
+                        <ol>
+                            <li>Prepare your artwork and upload it to a decentralized storage service like Pinata to get a CID.</li>
+                            <li>Create JSON metadata files for each art piece, pointing to the image's IPFS location.</li>
+                            <li>Upload the metadata folder to IPFS to get a second CID.</li>
+                            <li>Write and deploy the ERC-721 smart contract below using Remix.</li>
+                            <li>After deployment, call the `setBaseURI` function with your metadata folder's CID.</li>
+                            <li>Build a simple frontend with a "Mint" button to interact with your contract.</li>
+                        </ol>
+
+                        <h4><i class="fas fa-code"></i> Smart Contract: CosmicAnimals.sol</h4>
+                        <pre><code>// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+contract CosmicAnimals is ERC721, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
+    uint256 public constant MAX_SUPPLY = 1000;
+    uint256 public mintPrice = 0.01 ether;
+    string public baseURI;
+
+    constructor() ERC721("CosmicAnimals", "CANI") {}
+
+    function safeMint() public payable {
+        require(_tokenIdCounter.current() < MAX_SUPPLY, "All minted");
+        require(msg.value >= mintPrice, "Not enough ETH sent");
+        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
+        _safeMint(msg.sender, tokenId);
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
+    }
+
+    function setBaseURI(string memory _newBaseURI) public onlyOwner {
+        baseURI = _newBaseURI;
+    }
+
+    function withdraw() public onlyOwner {
+        (bool success, ) = owner().call{value: address(this).balance}("");
+        require(success, "Withdrawal failed");
+    }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 VaultPay   . All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const pages = document.querySelectorAll('.page');
+            const navLinks = document.querySelectorAll('.nav-links a');
+            const accordionItems = document.querySelectorAll('.accordion-item');
+            const themeToggleButton = document.getElementById('theme-toggle');
+            const body = document.body;
+            const themeIcon = themeToggleButton.querySelector('i');
+
+            // --- SPA Navigation Logic ---
+            function showPage(pageId) {
+                pages.forEach(page => page.classList.remove('active'));
+                const targetPage = document.getElementById('page-' + pageId);
+                if (targetPage) targetPage.classList.add('active');
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.dataset.page === pageId) link.classList.add('active');
+                });
+                
+                window.scrollTo(0, 0);
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    showPage(button.dataset.page);
+                });
+            });
+
+            // --- Accordion Logic ---
+            accordionItems.forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                header.addEventListener('click', () => {
+                    const content = item.querySelector('.accordion-content');
+                    const wasActive = item.classList.contains('active');
+                    
+                    // Close all items
+                    accordionItems.forEach(i => {
+                        i.classList.remove('active');
+                        i.querySelector('.accordion-content').style.maxHeight = null;
+                         i.querySelector('.accordion-content').style.padding = '0 20px';
+                    });
+
+                    // Open the clicked one if it wasn't active
+                    if (!wasActive) {
+                        item.classList.add('active');
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        content.style.padding = '20px';
+                    }
+                });
+            });
+            
+            // --- Theme Toggling Logic ---
+            function setTheme(theme) {
+                if (theme === 'light') {
+                    body.classList.add('light-theme');
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    body.classList.remove('light-theme');
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+
+            themeToggleButton.addEventListener('click', () => {
+                if (body.classList.contains('light-theme')) {
+                    setTheme('dark');
+                } else {
+                    setTheme('light');
+                }
+            });
+
+            // --- Load Saved Theme ---
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            }
+
+            // Show home page by default
+            showPage('home');
+        });
+    </script>
+
+</body>
+</html>

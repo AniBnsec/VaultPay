@@ -1,2 +1,1 @@
-# VaultPay
-A Digital Blockchain Wallet
+# Online-Trading-Platform

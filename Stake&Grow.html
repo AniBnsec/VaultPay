@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Wallet - Stake & Grow</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #f9fafb;
+            --card-bg-color: #ffffff;
+            --text-primary-color: #111827;
+            --text-secondary-color: #6b7280;
+            --card-border-color: #e5e7eb;
+            --toggle-bg-color: #e5e7eb;
+            --toggle-icon-color: #4b5563;
+        }
+
+        html.dark {
+            --bg-color: #111827;
+            --card-bg-color: #1f2937;
+            --text-primary-color: #f9fafb;
+            --text-secondary-color: #9ca3af;
+            --card-border-color: #374151;
+            --toggle-bg-color: #374151;
+            --toggle-icon-color: #d1d5db;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--card-border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .text-secondary {
+            color: var(--text-secondary-color);
+        }
+        .header-icon-btn {
+            background-color: var(--toggle-bg-color);
+            color: var(--toggle-icon-color);
+        }
+        .action-button {
+            background-color: #3b82f6; /* Blue-500 */
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        .action-button:hover:not(:disabled) {
+            background-color: #2563eb; /* Blue-600 */
+        }
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.visible { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background-color: var(--card-bg-color);
+            padding: 2rem;
+            border-radius: 12px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease, background-color 0.3s;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-backdrop.visible .modal-content { transform: scale(1); }
+        .loader {
+            border: 4px solid #d1d5db;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="max-w-5xl mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8 relative">
+            <a href="main.html" id="back-button" class="header-icon-btn absolute top-0 left-0 w-10 h-10 rounded-full text-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl md:text-4xl font-bold">Stake & <span class="text-blue-600">Grow</span></h1>
+            <button id="theme-toggle" class="header-icon-btn absolute top-0 right-0 w-10 h-10 rounded-full text-lg flex items-center justify-center transition-colors">
+                <i id="theme-toggle-icon" class="fas fa-sun"></i>
+            </button>
+        </header>
+
+        <main id="main-content"></main>
+    </div>
+    
+    <div id="notification-modal" class="modal-backdrop">
+        <div class="modal-content text-center">
+            <div id="modal-body"></div>
+            <h3 id="modal-title" class="text-xl font-semibold mb-2 mt-4"></h3>
+            <p id="modal-message" class="text-secondary mb-6 whitespace-pre-wrap"></p>
+            <button id="modal-close-btn" class="action-button w-full py-2">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainContent = document.getElementById('main-content');
+            const themeToggleButton = document.getElementById('theme-toggle');
+            const themeToggleIcon = document.getElementById('theme-toggle-icon');
+
+            // Theme switching logic
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    themeToggleIcon.classList.remove('fa-sun');
+                    themeToggleIcon.classList.add('fa-moon');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    themeToggleIcon.classList.remove('fa-moon');
+                    themeToggleIcon.classList.add('fa-sun');
+                }
+            };
+
+            themeToggleButton.addEventListener('click', () => {
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+            
+            // Apply initial theme on load
+            const savedTheme = localStorage.getItem('theme');
+            const osPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            applyTheme(savedTheme || osPreference);
+
+
+            const mockData = {
+                stakableAssets: [
+                    { ticker: 'ETH', name: 'Ethereum', apr: '+3.24%', icon: '<img src="https://static1.tokenterminal.com//ethereum/logo.png?logo_hash=fd8f54cab23f8f4980041f4e74607cac0c7ab880" alt="ETH logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'BNB', name: 'BNB Smart Chain', apr: '+1.03%', icon: '<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzsqQuXQtX8otkDKdQSNoTT5jQTINBc_cimw&s" alt="BNB logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'SOL', name: 'Solana', apr: '+4.40%', icon: '<img src="https://avatars.githubusercontent.com/u/58729655?s=200&v=4" alt="SOL logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'TRX', name: 'TRON', apr: '+5.06%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/1958.png" alt="TRX logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'DOT', name: 'Polkadot', apr: '+14.98%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/6636.png" alt="DOT logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'ATOM', name: 'Cosmos', apr: '+15.99%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/3794.png" alt="ATOM logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'INJ', name: 'NativeInjective', apr: '+15.01%', icon: '<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4zDpPgJrI9MMY2AadNjr5NNTrMJzfC1LH2A&s" alt="INJ logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'NEAR', name: 'NEAR Protocol', apr: '+7.70%', icon: '<img src="https://avatars.githubusercontent.com/u/7613128?s=280&v=4" alt="NEAR logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'SUI', name: 'Sui', apr: '+2.30%', icon: '<img src="https://coin-images.coingecko.com/coins/images/26375/large/sui-ocean-square.png?1727791290" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'OSMO', name: 'Osmosis', apr: '+3.41%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/12220.png" alt="OSMO logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'LUNC', name: 'Terra Classic', apr: '+15.00%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/4172.png" alt="LUNC logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'ZETA', name: 'Native ZetaChain', apr: '+5.40%', icon: '<img src="https://s3.coinmarketcap.com/static-gravity/image/901279d4611c458098fccee1c6076e36.png" alt="ZETA logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'ADA', name: 'Cardano', apr: '+4.69%', icon: '<img src="https://s3.coinmarketcap.com/static-gravity/image/4aec70f6f1254e4f89650cc68ae49f3c.png" alt="ADA logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'EVMOS', name: 'Native Evmos', apr: '+1.07%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/19899.png" alt="EVMOS logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'STARS', name: 'Stargaze', apr: '+25.22%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/16842.png" alt="STARS logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'CRO', name: 'Cronos', apr: '+6.63%', icon: '<img src="https://s3.coinmarketcap.com/static-gravity/image/84e1ec1257dd4a6da6ee5584338a2460.jpeg" alt="CRO logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'KAVA', name: 'Kava', apr: '+8.05%', icon: '<img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQC931Eoyh14rn1dPlVQiMbcLLn7o7g6UtZ7w&s" alt="KAVA logo" class="w-8 h-8 rounded-full">' },
+                    { ticker: 'KSM', name: 'Kusama', apr: '+15.31%', icon: '<img src="https://s2.coinmarketcap.com/static/img/coins/200x200/5034.png" alt="KSM logo" class="w-8 h-8 rounded-full">' },
+                ]
+            };
+
+            const templates = {
+                stakeGrow: `
+                    <div class="card p-6">
+                        <h2 class="text-2xl font-bold mb-1">Available Assets for Staking</h2>
+                        <p class="text-secondary mb-6">Here you can stake your assets to earn rewards.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${mockData.stakableAssets.map(asset => `
+                                <div class="card p-4 flex flex-col justify-between gap-4 hover:shadow-lg hover:border-blue-400 transition-all duration-200">
+                                    <div class="flex items-center gap-3">
+                                        ${asset.icon}
+                                        <div>
+                                            <p class="font-bold">${asset.ticker}</p>
+                                            <p class="text-sm text-secondary">${asset.name}</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-secondary">APR <span class="text-green-500 font-bold text-base">${asset.apr}</span></p>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="action-button w-full px-3 py-2 text-sm" onclick="showNotification('success', 'Stake Successful', 'You have successfully staked ${asset.name}.')">Stake</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`
+            };
+            
+            mainContent.innerHTML = templates.stakeGrow;
+        });
+        
+        // --- MODAL & UTILITY FUNCTIONS (Global Scope) ---
+        const modal = document.getElementById('notification-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+
+        const icons = {
+            success: '<i class="fas fa-check-circle text-3xl"></i>',
+            error: '<i class="fas fa-times-circle text-3xl"></i>',
+            info: '<i class="fas fa-info-circle text-3xl"></i>'
+        };
+        const iconColors = {
+            success: { bg: 'bg-green-100', text: 'text-green-600' },
+            error: { bg: 'bg-red-100', text: 'text-red-600' },
+            info: { bg: 'bg-blue-100', text: 'text-blue-600' }
+        };
+
+        function showNotification(type, title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            
+            if (type === 'loading') {
+                modalBody.innerHTML = '<div class="loader mx-auto"></div>';
+                modalCloseBtn.style.display = 'none';
+            } else {
+                const colors = iconColors[type] || iconColors.info;
+                modalBody.innerHTML = `<div class="mx-auto w-16 h-16 flex items-center justify-center rounded-full ${colors.bg} ${colors.text}">${icons[type] || icons.info}</div>`;
+                modalCloseBtn.style.display = 'block';
+            }
+            modal.classList.add('visible');
+        }
+
+        function closeModal() {
+            modal.classList.remove('visible');
+        }
+
+        modalCloseBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal && modalCloseBtn.style.display !== 'none') closeModal();
+        });
+    </script>
+</body>
+</html>

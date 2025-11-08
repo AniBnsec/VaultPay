@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Feedback Form</title>
+    <style>
+        body {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* A soft, off-white background is key for the 3D effect */
+            background-color: #e0e5ec;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .form-container {
+            background-color: #e0e5ec;
+            padding: 35px 45px;
+            /* Rounded corners for a softer, more modern look */
+            border-radius: 30px;
+            /* The key to the 3D "extruded" effect: two shadows (one light, one dark) */
+            box-shadow: 9px 9px 16px rgba(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #3b4a61;
+            text-align: center;
+            margin-bottom: 10px;
+            font-weight: 700;
+            /* A subtle text shadow to make the text look engraved */
+            text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.7), -1px -1px 1px rgba(163, 177, 198, 0.6);
+        }
+
+        .subtitle {
+            text-align:center; 
+            margin-bottom: 30px; 
+            color: #5c6c84;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #5c6c84;
+            font-size: 14px;
+        }
+
+        /* Styling for text inputs and textarea */
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            box-sizing: border-box; 
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            color: #3b4a61;
+            background-color: #e0e5ec;
+            /* The "inset" shadow makes the input look pressed into the container */
+            box-shadow: inset 7px 7px 10px #cbced1, inset -7px -7px 10px #ffffff;
+            transition: box-shadow 0.3s ease;
+        }
+
+        /* Change shadow on focus for a "pop-out" effect */
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        textarea:focus {
+            outline: none;
+            box-shadow: 3px 3px 6px #cbced1, -3px -3px 6px #ffffff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Styling for the radio buttons */
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .radio-container {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        /* Hide the default radio button */
+        .radio-container input[type="radio"] {
+            display: none;
+        }
+
+        .radio-container .radio-label {
+            padding: 10px 20px;
+            border-radius: 10px;
+            background-color: #e0e5ec;
+            box-shadow: 4px 4px 8px #cbced1, -4px -4px 8px #ffffff;
+            transition: all 0.2s ease-in-out;
+            color: #5c6c84;
+            font-weight: 500;
+        }
+        
+        /* Style for the selected radio button - inset shadow */
+        .radio-container input[type="radio"]:checked + .radio-label {
+            box-shadow: inset 3px 3px 6px #cbced1, inset -3px -3px 6px #ffffff;
+            color: #007BFF;
+            font-weight: 600;
+        }
+
+
+        /* The 3D Submit Button */
+        button[type="submit"] {
+            width: 100%;
+            padding: 18px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 6px 6px 12px #cbced1, -6px -6px 12px #ffffff;
+            transition: all 0.2s ease-in-out;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Hover effect to make the button "lift" */
+        button[type="submit"]:hover {
+            box-shadow: 8px 8px 16px #cbced1, -8px -8px 16px #ffffff;
+        }
+
+        /* Active effect to make the button look "pressed" */
+        button[type="submit"]:active {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+            color: #f0f0f0;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="form-container">
+        <h1>Share Your Feedback</h1>
+        <p class="subtitle">We would love to hear from you!</p>
+
+        <form action="https://formsubmit.co/kal23kalyani@gmail.com" method="POST">
+
+            <input type="hidden" name="_subject" value="New 3D Form Feedback!">
+            <input type="hidden" name="_next" value="https://your-domain.com/thankyou.html">
+            <input type="hidden" name="_captcha" value="false">
+
+            <div class="form-group">
+                <label for="name">Your Name</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Your Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Type of Feedback</label>
+                <div class="radio-group">
+                    <label class="radio-container">
+                        <input type="radio" name="feedback_type" value="General Comment" checked>
+                        <span class="radio-label">General</span>
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="feedback_type" value="Suggestion">
+                        <span class="radio-label">Suggestion</span>
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="feedback_type" value="Bug Report">
+                        <span class="radio-label">Bug Report</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Your Feedback</label>
+                <textarea id="message" name="message" required></textarea>
+            </div>
+
+            <button type="submit">Submit Feedback</button>
+
+        </form>
+    </div>
+
+</body>
+</html>

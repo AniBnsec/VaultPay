@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultPay - Crypto & Fiat Finance</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* --- START OF ORIGINAL VAULTPAY STYLES --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .glass-card {
+            background: rgba(10, 10, 10, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        .hero-gradient-text {
+            background: linear-gradient(90deg, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .btn-primary {
+            background-color: #8b5cf6;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+        main, header, footer {
+            position: relative;
+            z-index: 1;
+        }
+        .section-bg {
+            background-color: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(5px);
+        }
+        .dropdown:hover .dropdown-menu, .dropdown.open .dropdown-menu { display: block; }
+        .dropdown-menu { display: none; position: absolute; background-color: #111827; border: 1px solid #374151; border-radius: 0.5rem; min-width: 200px; z-index: 50; padding: 0.5rem; }
+        .dropdown-menu a, .dropdown-menu button { display: block; padding: 0.5rem 1rem; color: #d1d5db; border-radius: 0.375rem; width: 100%; text-align: left; }
+        .dropdown-menu a:hover, .dropdown-menu button:hover { background-color: #374151; color: white; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        #chat-window { height: 500px; width: 350px; }
+        #chat-messages { min-height: 0; }
+        .message.user { background-color: #8b5cf6; align-self: flex-end; color: white; }
+        .message.bot { background-color: #374151; align-self: flex-start; }
+        .tab-btn.active { background-color: #8b5cf6; color: white; }
+        .price-up { color: #22c55e; }
+        .price-down { color: #ef4444; }
+        @keyframes flash-up { 0% { background-color: rgba(34, 197, 94, 0.3); } 100% { background-color: transparent; } }
+        @keyframes flash-down { 0% { background-color: rgba(239, 68, 68, 0.3); } 100% { background-color: transparent; } }
+        .price-flash-up { animation: flash-up 1s ease-out; }
+        .price-flash-down { animation: flash-down 1s ease-out; }
+        .news-carousel-container { position: relative; }
+        .news-carousel { display: flex; overflow-x: auto; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; }
+        .news-carousel::-webkit-scrollbar { display: none; }
+        .news-card { flex: 0 0 90%; max-width: 90%; }
+        @media (min-width: 768px) { .news-card { flex: 0 0 45%; max-width: 45%; } }
+        @media (min-width: 1024px) { .news-card { flex: 0 0 24%; max-width: 24%; } }
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.5); color: white; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 40px; height: 40px; z-index: 10; }
+        .carousel-btn:hover { background-color: rgba(139, 92, 246, 0.8); }
+        #captcha-canvas { background-color: #1f2937; border-radius: 0.5rem; border: 1px solid #4b5563; }
+
+        /* Light Theme Overrides */
+        .light body { background-color: #f9fafb; color: #1f2937; }
+        .light header, .light footer { border-color: #e5e7eb; }
+        .light header { background-color: rgba(255, 255, 255, 0.75); }
+        .light footer.section-bg, .light .section-bg { background-color: rgba(249, 250, 251, 0.8); }
+        .light .text-white, .light .text-gray-300 { color: #111827; }
+        .light .text-gray-400, .light .text-gray-500 { color: #4b5563; }
+        .light nav a, .light #mobile-menu-button, .light #theme-toggle-btn { color: #4b5563; }
+        .light nav a:hover, .light #mobile-menu-button:hover, .light #theme-toggle-btn:hover { color: #8b5cf6; }
+        .light #auth-container .bg-gray-800 { background-color: #f3f4f6; color: #1f2937;}
+        .light #auth-container .bg-gray-800:hover { background-color: #e5e7eb; }
+        .light .glass-card { background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0, 0, 0, 0.08); }
+        .light .bg-violet-900 { background-color: #ddd6fe; border-color: #a78bfa; color: #5b21b6; }
+        .light a.bg-gray-800 { background-color: #e5e7eb; color: #1f2937; }
+        .light a.bg-gray-800:hover { background-color: #d1d5db; }
+        .light .feature-card .text-violet-400 { color: #8b5cf6; }
+        .light thead { background-color: #f3f4f6; }
+        .light tr { border-color: #e5e7eb; }
+        .light tr:hover { background-color: rgba(243, 244, 246, 0.5); }
+        .light p a.text-violet-400 { color: #7c3aed; }
+        .light .fa-check-circle.text-violet-400 { color: #8b5cf6; }
+        .light input, .light textarea { background-color: #f3f4f6; border-color: #d1d5db; color: #111827;}
+        .light input:focus, .light textarea:focus { ring-color: #8b5cf6; }
+        .light .dropdown-menu { background-color: #ffffff; border-color: #e5e7eb; }
+        .light .dropdown-menu a, .light .dropdown-menu button { color: #374151; }
+        .light .dropdown-menu a:hover, .light .dropdown-menu button:hover { background-color: #f3f4f6; color: #111827; }
+        .light .message.bot { background-color: #e5e7eb; color: #1f2937;}
+        .light #chat-input { background-color: #e5e7eb; border-color: #d1d5db; color: #1f2937;}
+        .light #chat-window .bg-gray-900\/80 { background-color: #f3f4f6; }
+        /* --- END OF ORIGINAL VAULTPAY STYLES --- */
+
+
+        /* ======================================================= */
+        /* == START OF THEME-AWARE FEEDBACK FORM STYLES == */
+        /* ======================================================= */
+
+        /* --- Base Layout Styles (Theme-Independent) --- */
+        #feedback .feedback-form-wrapper {
+            font-family: 'Poppins', sans-serif;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 1.5rem;
+            transition: background-color 0.3s ease;
+        }
+        #feedback .form-container {
+            padding: 35px 45px;
+            border-radius: 30px;
+            width: 100%;
+            max-width: 500px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        #feedback .form-title {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2rem;
+            font-weight: 700;
+            transition: color 0.3s ease, text-shadow 0.3s ease;
+        }
+        #feedback .subtitle {
+            text-align:center;
+            margin-bottom: 30px;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        #feedback .form-group { margin-bottom: 25px; }
+        #feedback label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        #feedback input[type="text"],
+        #feedback input[type="email"],
+        #feedback textarea {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease, color 0.3s ease;
+        }
+        #feedback textarea { resize: vertical; min-height: 120px; }
+        #feedback .radio-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        #feedback .radio-container { display: flex; align-items: center; cursor: pointer; }
+        #feedback .radio-container input[type="radio"] { display: none; }
+        #feedback .radio-container .radio-label {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+        #feedback button[type="submit"] {
+            width: 100%; padding: 18px;
+            border: none; border-radius: 15px; font-size: 18px; font-weight: bold;
+            letter-spacing: 1px; cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        /* --- Dark Theme (Default) --- */
+        #feedback .feedback-form-wrapper { background-color: #1f2937; }
+        #feedback .form-container {
+            background-color: #1f2937;
+            box-shadow: 7px 7px 14px #1a222c, -7px -7px 14px #242f42;
+        }
+        #feedback .form-title {
+            color: #e5e7eb;
+            text-shadow: 1px 1px 2px #1a222c, -1px -1px 2px #242f42;
+        }
+        #feedback .subtitle { color: #9ca3af; }
+        #feedback label { color: #d1d5db; }
+        #feedback input[type="text"],
+        #feedback input[type="email"],
+        #feedback textarea {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            box-shadow: inset 5px 5px 10px #1a222c, inset -5px -5px 10px #242f42;
+        }
+        #feedback input[type="text"]:focus,
+        #feedback input[type="email"]:focus,
+        #feedback textarea:focus {
+            outline: none;
+            box-shadow: 3px 3px 6px #1a222c, -3px -3px 6px #242f42;
+        }
+        #feedback .radio-container .radio-label {
+            background-color: #1f2937;
+            color: #9ca3af;
+            box-shadow: 4px 4px 8px #1a222c, -4px -4px 8px #242f42;
+        }
+        #feedback .radio-container input[type="radio"]:checked + .radio-label {
+            box-shadow: inset 3px 3px 6px #1a222c, inset -3px -3px 6px #242f42;
+            color: #a78bfa;
+            font-weight: 600;
+        }
+        #feedback button[type="submit"] {
+            background-color: #8b5cf6;
+            color: white;
+            box-shadow: 6px 6px 12px #1a222c, -6px -6px 12px #242f42;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        #feedback button[type="submit"]:hover { box-shadow: 8px 8px 16px #1a222c, -8px -8px 16px #242f42; }
+        #feedback button[type="submit"]:active {
+            box-shadow: inset 4px 4px 8px rgba(0,0,0, 0.4), inset -4px -4px 8px #242f42;
+        }
+
+        /* --- Light Theme --- */
+        .light #feedback .feedback-form-wrapper { background-color: #e0e5ec; }
+        .light #feedback .form-container {
+            background-color: #e0e5ec;
+            box-shadow: 9px 9px 16px rgba(163, 177, 198, 0.6), -9px -9px 16px rgba(255, 255, 255, 0.5);
+        }
+        .light #feedback .form-title {
+            color: #3b4a61;
+            text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.7), -1px -1px 1px rgba(163, 177, 198, 0.6);
+        }
+        .light #feedback .subtitle { color: #5c6c84; }
+        .light #feedback label { color: #5c6c84; }
+        .light #feedback input[type="text"],
+        .light #feedback input[type="email"],
+        .light #feedback textarea {
+            background-color: #e0e5ec;
+            color: #3b4a61;
+            box-shadow: inset 7px 7px 10px #cbced1, inset -7px -7px 10px #ffffff;
+        }
+        .light #feedback input[type="text"]:focus,
+        .light #feedback input[type="email"]:focus,
+        .light #feedback textarea:focus {
+            box-shadow: 3px 3px 6px #cbced1, -3px -3px 6px #ffffff;
+        }
+        .light #feedback .radio-container .radio-label {
+            background-color: #e0e5ec;
+            color: #5c6c84;
+            box-shadow: 4px 4px 8px #cbced1, -4px -4px 8px #ffffff;
+        }
+        .light #feedback .radio-container input[type="radio"]:checked + .radio-label {
+            box-shadow: inset 3px 3px 6px #cbced1, inset -3px -3px 6px #ffffff;
+            color: #007BFF;
+            font-weight: 600;
+        }
+        .light #feedback button[type="submit"] {
+            background-color: #007BFF;
+            color: white;
+            box-shadow: 6px 6px 12px #cbced1, -6px -6px 12px #ffffff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+        .light #feedback button[type="submit"]:hover { box-shadow: 8px 8px 16px #cbced1, -8px -8px 16px #ffffff; }
+        .light #feedback button[type="submit"]:active {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.2), inset -4px -4px 8px rgba(255, 255, 255, 0.7);
+            color: #f0f0f0;
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <canvas id="bg-canvas"></canvas>
+
+    <header class="bg-black bg-opacity-50 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-800">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#home" class="flex items-center space-x-2">
+                <i class="fas fa-shield-halved text-2xl text-violet-500"></i>
+                <span class="text-xl font-bold text-white">VaultPay</span>
+            </a>
+            <div class="hidden lg:flex items-center space-x-2">
+                <a href="#home" class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Home</a>
+                <a href="#prices" class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Live Prices</a>
+                <div class="dropdown relative">
+                    <a href="buy.html"><button class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Buy</button></a>
+                </div>
+                <a href="sell.html"><button class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Sell</button></a>
+                <a href="Stake&Grow.html" class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Earn</a>
+                <a href="learn.html" class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">Learn</a>
+                <div>
+                    <a href="https://opensea.io/"><button class="px-3 py-2 text-gray-300 hover:text-violet-400 transition rounded-md">NFT</button></a>
+                    
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle-btn" class="text-gray-300 hover:text-violet-400 transition text-lg">
+                    <i class="fas fa-sun"></i>
+                </button>
+                <div id="auth-container" class="hidden lg:flex items-center space-x-4"></div>
+            </div>
+            <button id="mobile-menu-button" class="lg:hidden text-2xl">
+                <i class="fas fa-bars"></i>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden lg:hidden px-6 pt-2 pb-4 space-y-2"></div>
+    </header>
+
+    <main>
+        <section id="home" class="relative py-20 md:py-32 overflow-hidden">
+            <div class="container mx-auto px-6 text-center relative z-10">
+                <div class="bg-violet-900 bg-opacity-20 border border-violet-700 text-violet-300 text-sm font-medium px-4 py-1.5 rounded-full inline-block mb-4">
+                    Get 2% off your first crypto transaction!
+                </div>
+                <h1 class="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4">
+                    Bridging the Gap Between <br>
+                    <span class="hero-gradient-text">Crypto and Daily Finance</span>
+                </h1>
+                <p class="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto mb-8">
+                    VaultPay is a smart crypto-fiat payment app that makes transactions easy, secure, and rewarding. All in one seamless platform.
+                </p>
+                <div class="flex justify-center items-center space-x-4">
+                    <button id="hero-get-started-btn" class="btn-primary px-8 py-3 font-semibold text-white rounded-lg">Get Started Today!</button>
+                    <a href="#about" class="px-8 py-3 font-semibold text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition">Learn More</a>
+                </div>
+            </div>
+        </section>
+        
+        <section id="features" class="py-20 section-bg">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white">Holding Crypto is now Rewarding</h2>
+                    <p class="text-gray-400 mt-2">Unlock the full potential of your digital assets.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <a href="pay&recive.html"><div class="glass-card rounded-xl p-6 text-center border-2 border-transparent transition duration-300 feature-card">
+                        <div class="text-4xl text-violet-400 mb-4"><i class="fas fa-exchange-alt"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2">Pay & Receive</h3>
+                        <p class="text-gray-400">Seamlessly transact with crypto and local fiat currencies for everyday payments.</p>
+                    </div></a>
+                    <a href="Stake&Grow.html"><div class="glass-card rounded-xl p-6 text-center border-2 border-transparent transition duration-300 feature-card">
+                        <div class="text-4xl text-violet-400 mb-4"><i class="fas fa-layer-group"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2">Stake & Grow</h3> 
+                        <p class="text-gray-400">Earn competitive yields and grow your portfolio by staking your crypto assets in our secure vaults.</p>
+                    </div></a>
+                    <a href="swap&bridge.html"><div class="glass-card rounded-xl p-6 text-center border-2 border-transparent transition duration-300 feature-card">
+                        <div class="text-4xl text-violet-400 mb-4"><i class="fas fa-random"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2">Swap & Bridge</h3>
+                        <p class="text-gray-400">Instantly swap between hundreds of cryptocurrencies with low fees and bridge assets across chains.</p>
+                    </div></a>
+                    <a href="newbalance.html"><div class="glass-card rounded-xl p-6 text-center border-2 border-transparent transition duration-300 feature-card">
+                        <div class="text-4xl text-violet-400 mb-4"><i class="fas fa-wallet"></i></div>
+                        <h3 class="text-xl font-bold text-white mb-2">Total Balance</h3>
+                        <p class="text-gray-400">Manage your entire portfolio with a real-time dashboard tracking all your assets and their value.</p>
+                    </div></a>
+                </div>
+            </div>
+        </section>
+
+        <section id="prices" class="py-20 section-bg">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white">Live Cryptocurrency Prices</h2>
+                    <p class="text-gray-400 mt-2">Market data from leading sources, updated in real-time. Click on a coin to view more details.</p>
+                </div>
+                <div class="glass-card rounded-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-800 bg-opacity-50">
+                                <tr>
+                                    <th class="p-4 font-semibold">#</th>
+                                    <th class="p-4 font-semibold">Coin</th>
+                                    <th class="p-4 font-semibold">Price</th>
+                                    <th class="p-4 font-semibold">24h Change</th>
+                                    <th class="p-4 font-semibold hidden md:table-cell">24h Volume</th>
+                                    <th class="p-4 font-semibold hidden lg:table-cell">Market Cap</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crypto-table-body">
+                                <tr><td colspan="6" class="text-center p-8"><i class="fas fa-spinner fa-spin text-2xl text-violet-400"></i><p class="mt-2 text-gray-400">Fetching live data...</p></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-gray-500 mt-4">Data provided by CoinGecko API</p>
+            </div>
+        </section>
+
+        <section id="about" class="py-20">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <img src="https://placehold.co/600x400/1e1b4b/a78bfa?text=VaultPay+Secure" alt="Secure Digital Finance" class="rounded-xl shadow-2xl shadow-violet-900/20">
+                    </div>
+                    <div>
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Secure, Rewarding, Seamless.</h2>
+                        <p class="text-gray-400 mb-6">VaultPay is engineered to be the ultimate bridge between traditional finance and the decentralized world. We believe in empowering our users by making crypto accessible and useful for everyday life. From QR payments at your local store to earning high yields through staking, our platform combines robust security with user-friendly design.</p>
+                        <ul class="space-y-4">
+                            <li class="flex items-start"><i class="fas fa-check-circle text-violet-400 mt-1 mr-3"></i><span><strong class="text-white">End-to-End Encryption:</strong> Your assets and data are protected with state-of-the-art security protocols.</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-violet-400 mt-1 mr-3"></i><span><strong class="text-white">Pay & Earn:</strong> Use your crypto for payments and get rewarded for every transaction you make.</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-violet-400 mt-1 mr-3"></i><span><strong class="text-white">Global Fiat On-Ramp:</strong> Easily convert your local currency into crypto and back again, seamlessly.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="get-started" class="py-20 section-bg">
+            <div class="container mx-auto px-6">
+                <div class="glass-card rounded-xl lg:flex items-center overflow-hidden">
+                    <div class="lg:w-1/2 p-8 lg:p-12">
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Trade on the Go.</h2>
+                        <p class="text-gray-400 mb-6">Access all of VaultPay's features from our powerful mobile app. Manage your portfolio, execute trades, and make payments anytime, anywhere. Secure, fast, and designed for you.</p>
+                        <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                            <a href="#" class="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition"><i class="fab fa-apple text-2xl mr-3"></i><div><p class="text-xs">Download on the</p><p class="text-lg -mt-1">App Store</p></div></a>
+                            <a href="#" class="flex items-center justify-center bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition"><i class="fab fa-google-play text-xl mr-3"></i><div><p class="text-xs">GET IT ON</p><p class="text-lg -mt-1">Google Play</p></div></a>
+                        </div>
+                    </div>
+                    <div class="lg:w-1/2"><img src="https://placehold.co/800x600/0a0a0a/8b5cf6?text=VaultPay+App" alt="VaultPay Mobile App" class="w-full h-full object-cover"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="news" class="py-20 section-bg">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white">Newz</h2>
+                    <p class="text-gray-400 mt-2">Stay updated with the most recent news from the digital asset world.</p>
+                </div>
+                <div class="news-carousel-container">
+                    <button id="prev-news-btn" class="carousel-btn left-0 ml-2"><i class="fas fa-chevron-left"></i></button>
+                    <div id="news-carousel" class="news-carousel gap-4">
+                        <div id="news-loading" class="w-full text-center p-8"><i class="fas fa-spinner fa-spin text-2xl text-violet-400"></i><p class="mt-2 text-gray-400">Fetching latest news...</p></div>
+                    </div>
+                    <button id="next-news-btn" class="carousel-btn right-0 mr-2"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="py-20">
+            <div class="container mx-auto px-6 max-w-4xl">
+                <div class="text-center mb-12"><h2 class="text-3xl md:text-4xl font-bold text-white">Frequently Asked Questions</h2></div>
+                <div class="space-y-4">
+                    <div class="glass-card rounded-lg"><details class="p-6 group"><summary class="flex justify-between items-center font-semibold text-white cursor-pointer">What is a cryptocurrency exchange?<i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i></summary><p class="text-gray-400 mt-4">Cryptocurrency exchanges are digital marketplaces that enable users to buy, sell, and trade cryptocurrencies like Bitcoin, Ethereum, and thousands of others. VaultPay extends this by integrating payment services.</p></details></div>
+                    <div class="glass-card rounded-lg"><details class="p-6 group"><summary class="flex justify-between items-center font-semibold text-white cursor-pointer">How do I track cryptocurrency prices?<i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i></summary><p class="text-gray-400 mt-4">You can track real-time prices, market cap, trading volume, and historical trends of top coins directly on our <a href="#prices" class="text-violet-400 underline">Live Prices</a> dashboard. The data is sourced from leading market aggregators for accuracy.</p></details></div>
+                    <div class="glass-card rounded-lg"><details class="p-6 group"><summary class="flex justify-between items-center font-semibold text-white cursor-pointer">Why should I choose VaultPay?<i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i></summary><p class="text-gray-400 mt-4">VaultPay unifies crypto and fiat with low-fee payments, real rewards, high-yield staking, and merchant tie-ups—something no other app does all in one place. We focus on security, usability, and real-world utility for your digital assets.</p></details></div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="feedback" class="py-20 section-bg">
+            <div class="container mx-auto px-6">
+                <div class="feedback-form-wrapper">
+                    <div class="form-container">
+                        <h2 class="form-title">Share Your Feedback</h2>
+                        <p class="subtitle">We would love to hear from you!</p>
+        
+                        <form action="https://formsubmit.co/kal23kalyani@gmail.com" method="POST">
+        
+                            <input type="hidden" name="_subject" value="New VaultPay Feedback!">
+                            <input type="hidden" name="_next" value="https://your-domain.com/thankyou.html">
+                            <input type="hidden" name="_captcha" value="false">
+        
+                            <div class="form-group">
+                                <label for="feedback-name">Your Name</label>
+                                <input type="text" id="feedback-name" name="name" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label for="feedback-email">Your Email Address</label>
+                                <input type="email" id="feedback-email" name="email" required>
+                            </div>
+        
+                            <div class="form-group">
+                                <label>Type of Feedback</label>
+                                <div class="radio-group">
+                                    <label class="radio-container">
+                                        <input type="radio" name="feedback_type" value="General Comment" checked>
+                                        <span class="radio-label">General</span>
+                                    </label>
+                                    <label class="radio-container">
+                                        <input type="radio" name="feedback_type" value="Suggestion">
+                                        <span class="radio-label">Suggestion</span>
+                                    </label>
+                                    <label class="radio-container">
+                                        <input type="radio" name="feedback_type" value="Bug Report">
+                                        <span class="radio-label">Bug Report</span>
+                                    </label>
+                                </div>
+                            </div>
+        
+                            <div class="form-group">
+                                <label for="feedback-message">Your Feedback</label>
+                                <textarea id="feedback-message" name="message" required></textarea>
+                            </div>
+        
+                            <button type="submit">Submit Feedback</button>
+        
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-black border-t border-gray-800 section-bg">
+        <div class="container mx-auto px-6 py-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8">
+                <div class="col-span-2 lg:col-span-2"><a href="#home" class="flex items-center space-x-2 mb-4"><i class="fas fa-shield-halved text-2xl text-violet-500"></i><span class="text-xl font-bold text-white">VaultPay</span></a><p class="text-gray-400 max-w-xs">The leading platform for bridging crypto with everyday finance.</p><div class="flex space-x-4 mt-6"><a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-twitter"></i></a><a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-telegram"></i></a><a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-discord"></i></a><a href="#" class="text-gray-400 hover:text-white"><i class="fab fa-github"></i></a></div></div>
+                <div><a href="buy.html"><button class="font-semibold text-white mb-4">Buy & Sell</button></a><ul class="space-y-2 text-gray-400"><li><a href="buy.html" class="hover:text-white">Buy Crypto</a></li><li><a href="sell.html" class="hover:text-white">Sell Crypto</a></li></ul></div>
+                <div><h4 class="font-semibold text-white mb-4">Trade</h4><ul class="space-y-2 text-gray-400"><li><a href="#" class="hover:text-white">Margin</a></li><li><a href="#" class="hover:text-white">Trading Bots</a></li><li><a href="#" class="hover:text-white">APIs</a></li></ul></div>
+                <div><h4 class="font-semibold text-white mb-4">Earn</h4><ul class="space-y-2 text-gray-400"><li><a href="#" class="hover:text-white">Simple Earn</a></li><li><a href="#" class="hover:text-white">Staking</a></li><li><a href="#" class="hover:text-white">Loans</a></li></ul></div>
+                <div><h4 class="font-semibold text-white mb-4">Company</h4><ul class="space-y-2 text-gray-400"><li><a href="#about" class="hover:text-white">About Us</a></li><li><a href="#" class="hover:text-white">Careers</a></li><li><a href="#news" class="hover:text-white">Blog</a></li><li><a href="#" class="hover:text-white">Privacy Policy</a></li></ul></div>
+            </div>
+            <div class="mt-12 border-t border-gray-800 pt-6 text-center text-gray-500 text-sm"><p>&copy; 2025 VaultPay - All Rights Reserved.</p></div>
+        </div>
+    </footer>
+    
+    <div id="auth-modal-container"></div>
+    <div id="wallet-modal-container"></div>
+
+    <div class="fixed bottom-5 right-5 z-50">
+        <div id="chat-window" class="hidden flex-col glass-card rounded-xl overflow-hidden mb-4">
+            <div class="p-4 bg-gray-900/80 font-bold text-white text-center">VaultPay AI Assistant</div>
+            <div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto flex flex-col"></div>
+            <div class="p-4 bg-gray-900/80">
+                <div class="flex space-x-2">
+                    <input type="text" id="chat-input" placeholder="Ask anything..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    <button id="chat-send-btn" class="btn-primary px-4 py-2 rounded-lg"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+        <button id="chat-toggle-button" class="bg-violet-600 hover:bg-violet-700 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center text-2xl transition-transform hover:scale-110">
+            <i class="fas fa-comment-dots"></i>
+        </button>
+    </div>
+
+    <script type="module">
+        // All original JavaScript for VaultPay remains unchanged.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+            projectId: "YOUR_FIREBASE_PROJECT_ID",
+            storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+            appId: "YOUR_FIREBASE_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let userWallet = null;
+        let previousPrices = {};
+        let chatHistory = [];
+
+        const authContainer = document.getElementById('auth-container');
+        const authModalContainer = document.getElementById('auth-modal-container');
+        const walletModalContainer = document.getElementById('wallet-modal-container');
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const htmlEl = document.documentElement;
+
+        const updateAuthUI = (user) => {
+            if (user) {
+                authContainer.innerHTML = `<div class="dropdown relative" id="user-dropdown"><button class="h-10 w-10 bg-violet-500 rounded-full flex items-center justify-center text-white font-bold text-lg">${user.email.charAt(0).toUpperCase()}</button><div class="dropdown-menu mt-2 right-0"><button id="view-wallet-btn">View Wallet</button><button id="sign-out-btn">Sign Out</button></div></div>`;
+                document.getElementById('sign-out-btn').addEventListener('click', () => signOut(auth));
+                document.getElementById('view-wallet-btn').addEventListener('click', showWalletModal);
+                document.getElementById('hero-get-started-btn').textContent = 'Go to Dashboard';
+                document.getElementById('hero-get-started-btn').onclick = () => showWalletModal();
+            } else {
+                authContainer.innerHTML = `<button id="sign-in-btn" class="px-5 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 rounded-lg transition">Sign In</button><button id="get-started-btn" class="btn-primary px-5 py-2 text-sm font-medium text-white rounded-lg">Get Started</button>`;
+                document.getElementById('get-started-btn').addEventListener('click', () => showAuthModal('signup'));
+                document.getElementById('sign-in-btn').addEventListener('click', () => showAuthModal('signin'));
+                document.getElementById('hero-get-started-btn').textContent = 'Get Started Today!';
+                document.getElementById('hero-get-started-btn').onclick = () => showAuthModal('signup');
+            }
+        };
+
+        const showAuthModal = (initialState = 'signin') => {
+            let step = 1;
+            let email, password;
+            let captchaText = '';
+            const generateCaptcha = () => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+                captchaText = result;
+                setTimeout(() => {
+                    const canvas = document.getElementById('captcha-canvas');
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#1f2937';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '30px Inter';
+                    ctx.fillStyle = '#9ca3af';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    for (let i = 0; i < captchaText.length; i++) {
+                        ctx.save();
+                        ctx.translate(25 + i * 20, canvas.height / 2);
+                        ctx.rotate((Math.random() - 0.5) * 0.4);
+                        ctx.fillText(captchaText[i], 0, 0);
+                        ctx.restore();
+                    }
+                    for (let i = 0; i < 5; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                        ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+                        ctx.strokeStyle = '#4b5563';
+                        ctx.stroke();
+                    }
+                }, 0);
+            };
+            const renderStep = () => {
+                let content = '';
+                switch (step) {
+                    case 1: content = `<h2 class="text-2xl font-bold text-white mb-2">${initialState === 'signin' ? 'Sign In' : 'Create Account'}</h2><p class="text-gray-400 mb-6">Welcome to VaultPay. Let's get started.</p><input type="email" id="email-input" placeholder="Email Address" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4 text-white"><input type="password" id="password-input" placeholder="Password" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4 text-white"><p id="auth-error" class="text-red-500 text-sm mb-4 h-5"></p><button id="step1-next" class="w-full btn-primary p-3 rounded-lg font-semibold">${initialState === 'signin' ? 'Sign In' : 'Continue'}</button><p class="text-center text-sm text-gray-400 mt-4">${initialState === 'signin' ? "Don't have an account?" : "Already have an account?"}<button id="toggle-state" class="text-violet-400 font-semibold">${initialState === 'signin' ? 'Sign Up' : 'Sign In'}</button></p>`; break;
+                    case 2: content = `<h2 class="text-2xl font-bold text-white mb-2">Verify Your Email</h2><p class="text-gray-400 mb-6">We've sent a 6-digit code to ${email}. (This is a simulation, enter any 6 digits).</p><input type="text" id="otp-input" placeholder="_ _ _ _ _ _" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4 text-white text-center tracking-[1em]"><p id="auth-error" class="text-red-500 text-sm mb-4 h-5"></p><button id="step2-next" class="w-full btn-primary p-3 rounded-lg font-semibold">Verify</button><p class="text-xs text-gray-500 mt-2 text-center">A real app would send an OTP via email. For this demo, any 6 digits will work.</p>`; break;
+                    case 3: content = `<h2 class="text-2xl font-bold text-white mb-2">Security Check</h2><p class="text-gray-400 mb-6">Please enter the characters you see below.</p><div class="flex justify-center mb-4"><canvas id="captcha-canvas" width="150" height="50"></canvas><button id="reload-captcha" class="ml-4 text-gray-400 hover:text-white"><i class="fas fa-sync-alt"></i></button></div><input type="text" id="captcha-input" placeholder="Enter CAPTCHA" class="w-full bg-gray-900 p-3 rounded-lg border border-gray-700 mb-4 text-white"><p id="auth-error" class="text-red-500 text-sm mb-4 h-5"></p><button id="step3-next" class="w-full btn-primary p-3 rounded-lg font-semibold">Continue</button>`; generateCaptcha(); break;
+                    case 4: content = `<h2 class="text-2xl font-bold text-white mb-2">Identity Verification (KYC)</h2><p class="text-gray-400 mb-6">As a final step, please complete your KYC using DigiLocker. This ensures the security of our platform.</p><button id="digilocker-btn" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-semibold flex items-center justify-center"><img src="https://meripehchaan.gov.in/images/digilocker_ico.png" class="w-6 h-6 mr-3" alt="DigiLocker">Verify with DigiLocker</button><p class="text-xs text-gray-500 mt-4 text-center">A real app would integrate the DigiLocker SDK. Clicking will create your account for this demo.</p>`; break;
+                }
+                authModalContainer.innerHTML = `<div class="modal-backdrop" id="modal-bg"><div class="glass-card rounded-xl p-8 w-full max-w-md relative"><button id="close-modal" class="absolute top-4 right-4 text-gray-500 hover:text-white">&times;</button>${content}</div></div>`;
+                addStepListeners();
+            };
+            const addStepListeners = () => {
+                document.getElementById('close-modal').addEventListener('click', closeModal);
+                document.getElementById('modal-bg').addEventListener('click', (e) => { if (e.target.id === 'modal-bg') closeModal(); });
+                const errorEl = document.getElementById('auth-error');
+                switch (step) {
+                    case 1:
+                        document.getElementById('toggle-state').addEventListener('click', () => showAuthModal(initialState === 'signin' ? 'signup' : 'signin'));
+                        document.getElementById('step1-next').addEventListener('click', async () => {
+                            email = document.getElementById('email-input').value;
+                            password = document.getElementById('password-input').value;
+                            if (!email || !password) { errorEl.textContent = 'Please enter email and password.'; return; }
+                            if (initialState === 'signin') { try { await signInWithEmailAndPassword(auth, email, password); closeModal(); } catch (error) { errorEl.textContent = error.message; } }
+                            else { step = 2; renderStep(); }
+                        }); break;
+                    case 2:
+                        document.getElementById('step2-next').addEventListener('click', () => {
+                            const otp = document.getElementById('otp-input').value;
+                            if (otp.length !== 6) { errorEl.textContent = 'Please enter a 6-digit code.'; return; }
+                            step = 3; renderStep();
+                        }); break;
+                    case 3:
+                        document.getElementById('reload-captcha').addEventListener('click', generateCaptcha);
+                        document.getElementById('step3-next').addEventListener('click', () => {
+                            const answer = document.getElementById('captcha-input').value;
+                            if (answer.toLowerCase() !== captchaText.toLowerCase()) { errorEl.textContent = 'Incorrect CAPTCHA. Please try again.'; generateCaptcha(); return; }
+                            step = 4; renderStep();
+                        }); break;
+                    case 4:
+                        document.getElementById('digilocker-btn').addEventListener('click', async () => {
+                            try {
+                                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                                await createWalletForUser(userCredential.user);
+                                closeModal();
+                                showWalletModal();
+                            } catch (error) { step = 1; renderStep(); document.getElementById('auth-error').textContent = error.message; }
+                        }); break;
+                }
+            };
+            const closeModal = () => { authModalContainer.innerHTML = ''; };
+            renderStep();
+        };
+
+        const createWalletForUser = async (user) => {
+            const newWallet = { address: '0x' + [...Array(40)].map(() => Math.floor(Math.random() * 16).toString(16)).join(''), privateKey: 'SIMULATED_KEY_' + [...Array(64)].map(() => Math.floor(Math.random() * 16).toString(16)).join(''), };
+            await setDoc(doc(db, "wallets", user.uid), newWallet);
+            userWallet = newWallet;
+        };
+        const showWalletModal = async () => {
+            if (!userWallet && currentUser) {
+                const docSnap = await getDoc(doc(db, "wallets", currentUser.uid));
+                if (docSnap.exists()) { userWallet = docSnap.data(); }
+            }
+            if (!userWallet) { alert("Wallet not found! Please sign up first."); return; }
+            walletModalContainer.innerHTML = `<div class="modal-backdrop" id="wallet-modal-bg"><div class="glass-card rounded-xl p-8 w-full max-w-lg relative"><button id="close-wallet-modal" class="absolute top-4 right-4 text-gray-500 hover:text-white">&times;</button><h2 class="text-2xl font-bold text-white mb-4">Your VaultPay Wallet</h2><div class="space-y-4"><div><label class="text-sm text-gray-400">Your Public Address</label><div class="flex items-center bg-gray-900 p-3 rounded-lg border border-gray-700"><input type="text" readonly value="${userWallet.address}" class="w-full bg-transparent text-white outline-none"><button class="ml-2 text-gray-400 hover:text-white"><i class="fas fa-copy"></i></button></div></div><div><label class="text-sm text-gray-400">Your Simulated Private Key</label><div class="flex items-center bg-gray-900 p-3 rounded-lg border border-gray-700"><input type="text" readonly value="${userWallet.privateKey}" class="w-full bg-transparent text-white outline-none"><button class="ml-2 text-gray-400 hover:text-white"><i class="fas fa-copy"></i></button></div></div><div class="bg-red-900/50 border border-red-500 text-red-300 text-sm p-4 rounded-lg"><strong class="font-bold">Warning:</strong> Never share your private key with anyone. This is a simulated key for demonstration purposes only.</div></div></div></div>`;
+            document.getElementById('close-wallet-modal').addEventListener('click', () => walletModalContainer.innerHTML = '');
+            document.getElementById('wallet-modal-bg').addEventListener('click', (e) => { if (e.target.id === 'wallet-modal-bg') walletModalContainer.innerHTML = ''; });
+        };
+        
+        const chatWindow = document.getElementById('chat-window');
+        const chatToggleButton = document.getElementById('chat-toggle-button');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const initChat = () => {
+            chatHistory = [{ role: "system", content: "You are VaultPay AI Assistant, a helpful and concise expert on cryptocurrency, finance, and the features of the VaultPay platform. Keep your answers brief and to the point." }];
+            chatMessages.innerHTML = '';
+            addMessage("Hello! I'm the VaultPay AI Assistant. How can I help you with your crypto and finance questions today?", 'bot');
+        };
+        chatToggleButton.addEventListener('click', () => {
+            const isHidden = chatWindow.classList.toggle('hidden');
+            if (!isHidden && chatMessages.children.length === 0) { initChat(); }
+        });
+        const addMessage = (text, sender) => {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${sender} p-3 rounded-lg max-w-[80%]`;
+            messageEl.textContent = text;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+        const handleChatSubmit = async () => {
+            const prompt = chatInput.value.trim();
+            if(!prompt) return;
+            addMessage(prompt, 'user');
+            chatHistory.push({ role: 'user', content: prompt });
+            chatInput.value = '';
+            addMessage('Typing...', 'bot');
+            const apiKey = "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";
+            try {
+                const apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}`, 'HTTP-Referer': `${window.location.protocol}//${window.location.hostname}`, 'X-Title': 'VaultPay' },
+                    body: JSON.stringify({ model: 'gpt-3.5-turbo', messages: chatHistory })
+                });
+                if (!response.ok) { const errorData = await response.json(); throw new Error(`API Error: ${errorData.error.message || response.statusText}`); }
+                const result = await response.json();
+                const botResponse = result.choices[0].message.content;
+                chatMessages.removeChild(chatMessages.lastChild);
+                addMessage(botResponse, 'bot');
+                chatHistory.push({ role: 'assistant', content: botResponse });
+            } catch (error) {
+                console.error("API Error:", error);
+                chatMessages.removeChild(chatMessages.lastChild);
+                addMessage("Sorry, I'm having trouble connecting right now. Please check the API key and network configuration.", 'bot');
+            }
+        };
+        chatSendBtn.addEventListener('click', handleChatSubmit);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChatSubmit(); });
+        
+        const fetchCryptoPrices = async () => {
+            const tableBody = document.getElementById('crypto-table-body');
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false');
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const data = await response.json();
+                let tableHTML = '';
+                data.forEach((coin, index) => {
+                    const priceChange = coin.price_change_percentage_24h;
+                    const priceChangeClass = priceChange >= 0 ? 'price-up' : 'price-down';
+                    const priceChangeIcon = priceChange >= 0 ? 'fa-caret-up' : 'fa-caret-down';
+                    let priceFlashClass = '';
+                    if (previousPrices[coin.id] && coin.current_price > previousPrices[coin.id]) { priceFlashClass = 'price-flash-up'; }
+                    else if (previousPrices[coin.id] && coin.current_price < previousPrices[coin.id]) { priceFlashClass = 'price-flash-down'; }
+                    tableHTML += `<tr class="border-t border-gray-800 hover:bg-gray-800/50 transition ${priceFlashClass}" id="coin-${coin.id}"><td class="p-4 text-gray-400">${index + 1}</td><td class="p-4"><a href="https://coinmarketcap.com/currencies/${coin.id}/" target="_blank" rel="noopener noreferrer" class="flex items-center space-x-3 group"><img src="${coin.image}" alt="${coin.name}" class="w-8 h-8 rounded-full"><div><p class="font-bold text-white group-hover:text-violet-400 transition">${coin.name}</p><p class="text-sm text-gray-500">${coin.symbol.toUpperCase()}</p></div></a></td><td class="p-4 font-semibold text-white">$${coin.current_price.toLocaleString()}</td><td class="p-4 font-semibold ${priceChangeClass}"><i class="fas ${priceChangeIcon} mr-1"></i>${priceChange.toFixed(2)}%</td><td class="p-4 text-gray-300 hidden md:table-cell">$${coin.total_volume.toLocaleString()}</td><td class="p-4 text-gray-300 hidden lg:table-cell">$${coin.market_cap.toLocaleString()}</td></tr>`;
+                    previousPrices[coin.id] = coin.current_price;
+                });
+                tableBody.innerHTML = tableHTML;
+            } catch (error) { console.error("Failed to fetch crypto prices:", error); tableBody.innerHTML = `<tr><td colspan="6" class="text-center p-8 text-red-400">Failed to load market data. Please try again later.</td></tr>`; }
+        };
+
+        const fetchNews = async () => {
+            const newsCarousel = document.getElementById('news-carousel');
+            try {
+                const response = await fetch('https://min-api.cryptocompare.com/data/v2/news/?lang=EN');
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const newsData = await response.json();
+                newsCarousel.innerHTML = '';
+                newsData.Data.slice(0, 12).forEach(article => {
+                    newsCarousel.innerHTML += `<div class="news-card glass-card rounded-xl overflow-hidden group m-2"><img src="${article.imageurl}" alt="${article.title}" class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.onerror=null;this.src='https://placehold.co/400x250/1e1b4b/ffffff?text=News';"><div class="p-6"><p class="text-xs text-gray-400 mb-2">${article.source_info.name}</p><h3 class="font-bold text-white mb-3 h-24 overflow-hidden">${article.title}</h3><a href="${article.url}" target="_blank" rel="noopener noreferrer" class="font-semibold text-violet-400 hover:text-violet-300 transition">Continue Reading <i class="fas fa-arrow-right ml-1"></i></a></div></div>`;
+                });
+            } catch (error) { console.error("Failed to fetch news:", error); newsCarousel.innerHTML = `<div class="w-full text-center p-8 text-red-400">Failed to load news. Please try again later.</div>`; }
+        };
+        const setupNewsCarousel = () => {
+            const nextBtn = document.getElementById('next-news-btn');
+            const prevBtn = document.getElementById('prev-news-btn');
+            const carousel = document.getElementById('news-carousel');
+            if (!carousel || !carousel.querySelector('.news-card')) return;
+            nextBtn.addEventListener('click', () => { const cardWidth = carousel.querySelector('.news-card').offsetWidth; carousel.scrollLeft += cardWidth + 16; });
+            prevBtn.addEventListener('click', () => { const cardWidth = carousel.querySelector('.news-card').offsetWidth; carousel.scrollLeft -= cardWidth + 16; });
+        };
+
+        let scene, camera, renderer, particles, lines;
+        const particleCount = 200, connectionDistance = 100;
+        function init3DBackground() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 300;
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg-canvas'), alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            const particleGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 800;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 800;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 800;
+                velocities.push({ x: (Math.random() - 0.5) * 0.5, y: (Math.random() - 0.5) * 0.5, z: (Math.random() - 0.5) * 0.5 });
+            }
+            particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleGeometry.userData.velocities = velocities;
+            const particleMaterial = new THREE.PointsMaterial({ color: 0x8b5cf6, size: 2, transparent: true, opacity: 0.7 });
+            particles = new THREE.Points(particleGeometry, particleMaterial);
+            scene.add(particles);
+            const lineGeometry = new THREE.BufferGeometry();
+            const linePositions = new Float32Array(particleCount * particleCount * 3);
+            lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.1 });
+            lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+            scene.add(lines);
+            window.addEventListener('resize', onWindowResize, false);
+            document.addEventListener('mousemove', onDocumentMouseMove, false);
+            animate();
+        }
+        function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+        function onDocumentMouseMove(event) {
+            const mouseX = (event.clientX - window.innerWidth / 2) / 10;
+            const mouseY = (event.clientY - window.innerHeight / 2) / 10;
+            camera.position.x += (mouseX - camera.position.x) * 0.01;
+            camera.position.y += (-mouseY - camera.position.y) * 0.01;
+            camera.lookAt(scene.position);
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            const particlePositions = particles.geometry.attributes.position;
+            const linePositions = lines.geometry.attributes.position;
+            const velocities = particles.geometry.userData.velocities;
+            let lineVertexIndex = 0;
+            for (let i = 0; i < particleCount; i++) {
+                particlePositions.array[i * 3] += velocities[i].x;
+                particlePositions.array[i * 3 + 1] += velocities[i].y;
+                particlePositions.array[i * 3 + 2] += velocities[i].z;
+                if (Math.abs(particlePositions.array[i * 3]) > 400) velocities[i].x *= -1;
+                if (Math.abs(particlePositions.array[i * 3 + 1]) > 400) velocities[i].y *= -1;
+                if (Math.abs(particlePositions.array[i * 3 + 2]) > 400) velocities[i].z *= -1;
+                for (let j = i + 1; j < particleCount; j++) {
+                    const dx = particlePositions.array[i * 3] - particlePositions.array[j * 3];
+                    const dy = particlePositions.array[i * 3 + 1] - particlePositions.array[j * 3 + 1];
+                    const dz = particlePositions.array[i * 3 + 2] - particlePositions.array[j * 3 + 2];
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist < connectionDistance) {
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3];
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3 + 1];
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[i * 3 + 2];
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3];
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3 + 1];
+                        linePositions.array[lineVertexIndex++] = particlePositions.array[j * 3 + 2];
+                    }
+                }
+            }
+            for (let i = lineVertexIndex; i < linePositions.array.length; i++) { linePositions.array[i] = 0; }
+            particlePositions.needsUpdate = true;
+            linePositions.needsUpdate = true;
+            lines.geometry.setDrawRange(0, lineVertexIndex / 3);
+            renderer.render(scene, camera);
+        }
+        
+        const setTheme = (theme) => {
+            const icon = themeToggleBtn.querySelector('i');
+            if (theme === 'light') {
+                htmlEl.classList.add('light');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'light');
+                if (particles) particles.material.color.setHex(0x5b21b6);
+                if (lines) lines.material.color.setHex(0x5b21b6);
+            } else {
+                htmlEl.classList.remove('light');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'dark');
+                if (particles) particles.material.color.setHex(0x8b5cf6);
+                if (lines) lines.material.color.setHex(0x8b5cf6);
+            }
+        };
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = htmlEl.classList.contains('light') ? 'dark' : 'light';
+            setTheme(currentTheme);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            userWallet = null;
+            updateAuthUI(user);
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            init3DBackground();
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(savedTheme);
+            fetchCryptoPrices();
+            setInterval(fetchCryptoPrices, 30000);
+            fetchNews().then(setupNewsCarousel);
+        });
+
+    </script>
+</body>
+</html>

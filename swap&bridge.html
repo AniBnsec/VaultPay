@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DeFi Hub - Swap & Bridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* --- GLOBAL STYLES & BRIDGE UI --- */
+        :root {
+            /* Variables for Swap UI (adapted for dark theme) */
+            --mm-bg: #1A1A1A;
+            --mm-panel-bg: #2a2a2a;
+            --mm-primary-blue: #037DD6;
+            --mm-border-color: #4a4a4a;
+            --mm-text-primary: #FFFFFF;
+            --mm-text-secondary: #a0aec0;
+            --mm-text-tertiary: #718096;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .main-container {
+            width: 100%;
+            max-width: 450px;
+            margin: 1.5rem auto;
+            padding: 1rem;
+            position: relative; 
+        }
+
+        .glass-effect {
+            background: rgba(38, 38, 38, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- TABS --- */
+        .tabs {
+            display: flex;
+            background-color: rgba(38, 38, 38, 0.6);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 1.5rem;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            color: #a0aec0;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 9px;
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background-color: #4a5568;
+            color: #FFFFFF;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* --- SCOPED SWAP UI STYLES --- */
+        #swap-container {
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        #swap-container .swap-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 8px 0;
+            margin-bottom: 16px;
+        }
+        #swap-container .swap-header h1 { font-size: 18px; font-weight: 600; margin: 0; }
+        #swap-container .swap-panel {
+            border: 1px solid var(--mm-border-color);
+            border-radius: 12px;
+            background-color: var(--mm-panel-bg);
+        }
+        #swap-container .swap-section { padding: 16px; }
+        #swap-container .input-group { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        #swap-container .amount-input {
+            font-family: 'Inter', sans-serif; background: none; border: none;
+            color: var(--mm-text-primary); font-size: 28px; font-weight: 600;
+            width: 100%; outline: none; padding: 0;
+        }
+        #swap-container .amount-input::placeholder { color: #555; }
+        #swap-container .token-selector {
+            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            padding: 8px 12px; border-radius: 20px; background-color: var(--mm-bg);
+            border: 1px solid transparent; transition: border-color 0.2s;
+        }
+        #swap-container .token-selector:hover { border-color: var(--mm-primary-blue); }
+        #swap-container .token-selector .icon { width: 24px; height: 24px; border-radius: 50%; }
+        #swap-container .token-selector .ticker { font-size: 18px; font-weight: 600; }
+        #swap-container .token-selector svg { width: 16px; height: 16px; color: var(--mm-text-secondary); }
+        #swap-container .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 13px; color: var(--mm-text-secondary); margin-top: 8px;
+        }
+        #swap-container .separator { position: relative; height: 1px; background-color: var(--mm-border-color); }
+        #swap-container .swap-arrow-btn {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--mm-panel-bg); border: 1px solid var(--mm-border-color);
+            border-radius: 8px; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: var(--mm-primary-blue);
+        }
+        #swap-container .swap-arrow-btn svg { width: 20px; height: 20px; }
+        #swap-container .quote-info {
+            font-size: 14px; color: var(--mm-text-secondary); text-align: center; padding: 20px 0;
+        }
+        #swap-container .quote-info .best-quote { color: var(--mm-text-primary); font-weight: 500; }
+        #swap-container .action-button {
+            width: 100%; background-color: var(--mm-primary-blue); color: white;
+            border: none; border-radius: 12px; padding: 16px; font-size: 18px;
+            font-weight: 600; cursor: pointer; margin-top: 1rem; transition: opacity 0.2s;
+        }
+        #swap-container .action-button:disabled { background-color: #4a5568; cursor: not-allowed; }
+        
+        /* --- MODAL STYLES --- */
+        .modal-bg-overlay {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content-wrapper {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background-color: var(--mm-bg); border-radius: 20px 20px 0 0;
+            display: flex; flex-direction: column; box-sizing: border-box;
+            animation: slideUp 0.3s ease-out; color: var(--mm-text-primary);
+        }
+        
+        .swap-modal-content { height: 85vh; padding: 16px; }
+        .bridge-modal-content { height: 70vh; padding: 1.5rem; }
+
+        .modal-header {
+            display: flex; justify-content: center; align-items: center;
+            position: relative; padding-bottom: 16px;
+        }
+        .modal-header h2 { margin: 0; font-size: 18px; }
+        .modal-close-btn { position: absolute; right: 0; top: 0; font-size: 24px; cursor: pointer; color: var(--mm-text-secondary); }
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--mm-text-secondary); width: 20px; }
+        .search-input {
+            width: 100%; background-color: var(--mm-panel-bg); border: 1px solid var(--mm-border-color);
+            border-radius: 12px; padding: 12px 12px 12px 40px; color: var(--mm-text-primary);
+            font-size: 16px; box-sizing: border-box;
+        }
+        
+        .token-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
+        .token-list li { display: flex; align-items: center; padding: 12px 4px; cursor: pointer; border-radius: 8px; }
+        .token-list li:hover { background-color: #333; }
+        .token-list .token-icon { width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; }
+        .token-list .token-info { display: flex; flex-direction: column; }
+        .token-list .token-ticker { font-size: 16px; font-weight: 500; }
+        .token-list .token-name { font-size: 14px; color: var(--mm-text-secondary); }
+        .token-list .checkmark { margin-left: auto; color: #34C759; font-size: 20px; }
+
+        .modal-content-wrapper::-webkit-scrollbar, .token-list::-webkit-scrollbar { width: 6px; }
+        .modal-content-wrapper::-webkit-scrollbar-track, .token-list::-webkit-scrollbar-track { background: #2d3748; }
+        .modal-content-wrapper::-webkit-scrollbar-thumb, .token-list::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 3px; }
+        
+        .fade-out { animation: fadeOut 0.3s ease-in forwards; }
+        
+        /* --- ADDED STYLES FOR SUCCESS MESSAGE --- */
+        .show-message {
+            animation: fadeIn 0.3s ease-out, slideUpFromBottom 0.3s ease-out;
+        }
+
+        @keyframes fadeIn { 
+            from { opacity: 0; } 
+            to { opacity: 1; } 
+        }
+
+        @keyframes fadeOut { 
+            from { opacity: 1; } 
+            to { opacity: 0; } 
+        }
+        
+        @keyframes slideUp { 
+            from { transform: translateY(100%); } 
+            to { transform: translateY(0); } 
+        }
+
+        @keyframes slideUpFromBottom {
+            from { transform: translateY(20px); }
+            to { transform: translateY(0); }
+        }
+
+        /* --- THEME SWITCHER STYLES --- */
+        #theme-toggle-btn {
+            background-color: #2a2a2a;
+            color: #a0aec0;
+        }
+        #theme-toggle-btn:hover {
+            background-color: #3a3a3a;
+        }
+
+        /* --- LIGHT THEME STYLES --- */
+        body.light-theme {
+            background-color: #F9FAFB; /* gray-50 */
+            color: #111827; /* gray-900 */
+            --mm-bg: #FFFFFF;
+            --mm-panel-bg: #F3F4F6; /* gray-100 */
+            --mm-primary-blue: #3B82F6; /* blue-500 */
+            --mm-border-color: #E5E7EB; /* gray-200 */
+            --mm-text-primary: #1F2937; /* gray-800 */
+            --mm-text-secondary: #6B7280; /* gray-500 */
+            --mm-text-tertiary: #9CA3AF; /* gray-400 */
+        }
+        body.light-theme .tabs { background-color: rgba(229, 231, 235, 0.6); } /* gray-200 */
+        body.light-theme .tab-button.active { background-color: #FFFFFF; color: #1F2937; }
+        body.light-theme #swap-container .amount-input::placeholder { color: #9CA3AF; } /* gray-400 */
+        body.light-theme #swap-container .action-button:disabled { background-color: #D1D5DB; } /* gray-300 */
+        body.light-theme .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        body.light-theme .text-gray-100 { color: #111827; } /* gray-900 */
+        body.light-theme .text-gray-300 { color: #4B5563; } /* gray-600 */
+        body.light-theme .text-gray-400 { color: #6B7280; } /* gray-500 */
+        body.light-theme .bg-gray-800\/50 { background-color: rgba(243, 244, 246, 0.8); } /* gray-100 */
+        body.light-theme .border-gray-800\/80 { border-color: rgba(243, 244, 246, 0.8); } /* gray-100 */
+        body.light-theme #swap-networks-btn { background-color: #E5E7EB; color: #3B82F6; }
+        body.light-theme #swap-networks-btn:hover { background-color: #3B82F6; color: white; }
+        body.light-theme #bridge-action-btn { background-color: #3B82F6; }
+        body.light-theme #bridge-action-btn:hover { background-color: #2563EB; }
+        body.light-theme #bridge-action-btn:disabled { background-color: #D1D5DB; } /* gray-300 */
+        body.light-theme .border-gray-700 { border-color: #D1D5DB; } /* gray-300 */
+        body.light-theme .modal-bg-overlay { background-color: rgba(0,0,0,0.4); }
+        body.light-theme .search-input { background-color: #FFFFFF; border-color: #D1D5DB; color: #1F2937; }
+        body.light-theme .token-list li:hover { background-color: #F3F4F6; }
+        body.light-theme .token-list .checkmark { color: #16A34A; }
+        body.light-theme #modal-search-bridge { background-color: #FFFFFF; border-color: #D1D5DB; }
+        body.light-theme #modal-search-bridge:focus { ring-color: #3B82F6; }
+        body.light-theme .hover\:bg-gray-700\/50:hover { background-color: rgba(229, 231, 235, 0.5); }
+        body.light-theme .bg-blue-600\/50 { background-color: rgba(59, 130, 246, 0.3); }
+        body.light-theme #confirm-bridge-btn { background-color: #3B82F6; }
+        body.light-theme #confirm-bridge-btn:hover { background-color: #2563EB; }
+        body.light-theme #cancel-bridge-btn { background-color: #E5E7EB; color: #374151; }
+        body.light-theme #cancel-bridge-btn:hover { background-color: #D1D5DB; }
+        body.light-theme #theme-toggle-btn { background-color: #F3F4F6; color: #4B5563; }
+        body.light-theme #theme-toggle-btn:hover { background-color: #E5E7EB; }
+        body.light-theme .modal-content-wrapper::-webkit-scrollbar-track, body.light-theme .token-list::-webkit-scrollbar-track { background: #e5e7eb; }
+        body.light-theme .modal-content-wrapper::-webkit-scrollbar-thumb, body.light-theme .token-list::-webkit-scrollbar-thumb { background-color: #9ca3af; }
+    </style>
+</head>
+<body>
+
+    <a href="main.html" title="Go Back" class="fixed top-5 left-5 z-50 p-2 rounded-full transition-colors duration-300 bg-gray-700/50 text-gray-300 hover:bg-gray-600/50">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    
+    <button id="theme-toggle-btn" class="fixed top-4 right-4 z-50 p-2 rounded-full transition-colors duration-300">
+        <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    </button>
+
+    <div class="main-container">
+        
+        <nav class="tabs">
+            <button class="tab-button active" data-tab="swap">Swap</button>
+            <button class="tab-button" data-tab="bridge">Bridge</button>
+        </nav>
+
+        <div id="swap" class="tab-content active">
+            <div id="swap-container">
+                <div class="swap-panel">
+                    <div class="swap-section">
+                        <div class="input-group">
+                            <input type="number" id="from-amount" class="amount-input" placeholder="0">
+                            <button id="from-token-selector" class="token-selector">
+                                <img id="from-token-icon" src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" class="icon">
+                                <span id="from-token-ticker" class="ticker">ETH</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                        </div>
+                        <div class="info-row">
+                            <span id="from-usd-value">$0.00</span>
+                            <span id="from-balance">Balance: 0</span>
+                        </div>
+                    </div>
+                    <div class="separator">
+                        <div class="swap-arrow-btn" id="swap-tokens-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" /></svg>
+                        </div>
+                    </div>
+                    <div class="swap-section">
+                        <div class="input-group">
+                            <input type="number" id="to-amount" class="amount-input" placeholder="0" readonly>
+                            <button id="to-token-selector" class="token-selector">
+                                <img id="to-token-icon" src="https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png" class="icon">
+                                <span id="to-token-ticker" class="ticker">USDC</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
+                            </button>
+                        </div>
+                        <div class="info-row">
+                             <span id="to-usd-value">$0.00</span>
+                            <span id="to-balance">Balance: 0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="quote-info" id="quote-info">Fetching quotes...</div>
+                <button id="swap-action-button" class="action-button" disabled>Review Swap</button>
+            </div>
+        </div>
+
+        <div id="bridge" class="tab-content">
+            <div id="bridge-app" class="w-full max-w-md mx-auto">
+                <div class="glass-effect rounded-2xl p-6 shadow-2xl">
+                    <header class="flex items-center justify-between mb-6">
+                        <h1 class="text-2xl font-bold text-gray-100">Bridge</h1>
+                    </header>
+                    <div class="relative">
+                        <div id="from-section" class="bg-gray-800/50 rounded-xl p-4 mb-2 transition-all duration-300">
+                              <div class="flex justify-between items-center">
+                                  <div class="w-2/3">
+                                      <label class="text-xs text-gray-400">From</label>
+                                      <button id="from-network-btn" class="flex items-center space-x-2 py-2 w-full text-left hover:bg-gray-700/50 rounded-md -ml-2 px-2 transition-colors">
+                                          <img id="from-network-img" src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg" class="w-6 h-6 rounded-full" alt="From Network">
+                                          <span id="from-network-name" class="text-lg font-semibold">Ethereum</span>
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                      </button>
+                                  </div>
+                                  <div class="w-1/3 text-right">
+                                      <input id="bridge-amount-input" type="number" placeholder="0.0" class="bg-transparent text-2xl font-mono w-full text-right focus:outline-none placeholder-gray-500">
+                                      <button id="bridge-token-select-btn" class="flex items-center justify-end space-x-2 w-full mt-1 hover:bg-gray-700/50 rounded-md py-1 -mr-2 px-2 transition-colors">
+                                          <img id="bridge-token-img" src="https://placehold.co/20x20/2d3748/a0aec0?text=?" class="w-5 h-5 rounded-full" alt="Token">
+                                          <span id="bridge-token-name" class="font-medium text-gray-300">Select Token</span>
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                      </button>
+                                  </div>
+                              </div>
+                              <div class="text-right text-xs text-gray-400 mt-2 pr-1">
+                                  Balance: <span id="bridge-token-balance">--</span>
+                              </div>
+                        </div>
+                        <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                            <button id="swap-networks-btn" class="bg-gray-700 hover:bg-blue-600 rounded-full p-2 border-4 border-gray-800/80 transition-all duration-300 transform hover:rotate-180 focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                            </button>
+                        </div>
+                        <div id="to-section" class="bg-gray-800/50 rounded-xl p-4">
+                            <div class="flex justify-between items-center">
+                                <div class="w-2/3">
+                                    <label class="text-xs text-gray-400">To</label>
+                                    <button id="to-network-btn" class="flex items-center space-x-2 py-2 w-full text-left hover:bg-gray-700/50 rounded-md -ml-2 px-2 transition-colors">
+                                        <img id="to-network-img" src="https://upload.wikimedia.org/wikipedia/en/thumb/3/3f/Polygon_blockchain_logo.svg/2560px-Polygon_blockchain_logo.svg.png" class="w-6 h-6 rounded-full" alt="To Network">
+                                        <span id="to-network-name" class="text-lg font-semibold">Polygon</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                </div>
+                                <div class="w-1/3 text-right">
+                                   <div id="bridge-amount-output" class="text-2xl font-mono text-gray-400">0.0</div>
+                                   <div id="bridge-received-token-name" class="font-medium text-gray-300 mt-1">Select Token</div>
+                                </div>
+                            </div>
+                              <div class="text-right text-xs text-gray-400 mt-2 pr-1">
+                                  Recipient: <span class="font-mono">0x...a1b2</span>
+                              </div>
+                        </div>
+                    </div>
+                    <div id="bridge-details-section" class="mt-6 text-sm text-gray-300 space-y-2 hidden">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Rate</span>
+                            <span id="bridge-rate-display" class="font-mono"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Network Fee</span>
+                            <span id="bridge-fee-display" class="font-mono"></span>
+                        </div>
+                         <div class="flex justify-between">
+                            <span class="text-gray-400">Est. Time</span>
+                            <span id="bridge-time-display" class="font-mono">~5 minutes</span>
+                        </div>
+                    </div>
+                    <button id="bridge-action-btn" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-xl mt-6 transition-all duration-300">
+                        Select a token
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="token-modal" class="modal-bg-overlay">
+        <div class="modal-content-wrapper swap-modal-content">
+            <div class="modal-header"><h2 id="modal-title-swap">Select a token</h2><span class="modal-close-btn" data-modal-id="token-modal">&times;</span></div>
+            <div class="search-box">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                <input type="text" id="search-input-swap" class="search-input" placeholder="Search for a token">
+            </div>
+            <ul id="token-list-swap" class="token-list"></ul>
+        </div>
+    </div>
+    
+    <div id="bridge-selection-modal" class="modal-bg-overlay">
+        <div class="modal-content-wrapper bridge-modal-content glass-effect">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modal-title-bridge" class="text-xl font-bold">Select Network</h2>
+                <button class="modal-close-btn text-2xl" data-modal-id="bridge-selection-modal">&times;</button>
+            </div>
+            <input id="modal-search-bridge" type="text" placeholder="Search name or paste address" class="w-full bg-gray-800/70 border border-gray-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="modal-content-bridge" class="flex-grow overflow-y-auto -mr-3 pr-3"></div>
+        </div>
+    </div>
+    
+    <div id="review-modal" class="modal-bg-overlay">
+        <div class="modal-content-wrapper p-6 glass-effect rounded-2xl" style="bottom: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 420px;">
+            <h2 class="text-xl font-bold text-center mb-6">Review Bridge</h2>
+            <div class="bg-gray-800/50 rounded-xl p-4 space-y-3 text-sm">
+                <div class="flex justify-between items-center"><span class="text-gray-400">From</span><div id="review-from" class="flex items-center space-x-2"></div></div>
+                <div class="flex justify-between items-center"><span class="text-gray-400">To</span><div id="review-to" class="flex items-center space-x-2"></div></div>
+                <hr class="border-gray-700">
+                <div class="flex justify-between items-center"><span class="text-gray-400">You Send</span><div id="review-send" class="font-mono text-right"></div></div>
+                <div class="flex justify-between items-center"><span class="text-gray-400">You Receive</span><div id="review-receive" class="font-mono text-right"></div></div>
+            </div>
+            <div class="mt-6 space-y-4">
+                <button id="confirm-bridge-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-colors">Confirm Bridge</button>
+                <button id="cancel-bridge-btn" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-xl transition-colors">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- THEME SWITCHING LOGIC ---
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const body = document.body;
+
+            const applyTheme = (theme) => {
+                if (theme === 'light') {
+                    body.classList.add('light-theme');
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                } else {
+                    body.classList.remove('light-theme');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                }
+            };
+
+            themeToggleBtn.addEventListener('click', () => {
+                const isLight = body.classList.contains('light-theme');
+                const newTheme = isLight ? 'dark' : 'light';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+
+            // Apply saved theme on load
+            const savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
+            applyTheme(savedTheme);
+
+
+            // --- GLOBAL: TAB SWITCHING LOGIC ---
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        if (content.id === button.dataset.tab) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // --- SWAP APP LOGIC ---
+            function initSwapApp() {
+                 const swapTokens = [
+                      { ticker: 'ETH', name: 'Ethereum', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png', price: 3500.00 },
+                      { ticker: 'USDC', name: 'USD Coin', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3408.png', price: 1.00 },
+                      { ticker: 'USDT', name: 'Tether', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png', price: 1.00 },
+                      { ticker: 'DAI', name: 'Dai', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/4943.png', price: 1.00 },
+                      { ticker: 'WBTC', name: 'Wrapped BTC', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3717.png', price: 65000.00 },
+                      { ticker: 'BNB', name: 'BNB', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png', price: 580.00 },
+                      { ticker: 'SOL', name: 'Solana', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png', price: 175.00 },
+                      { ticker: 'XRP', name: 'XRP', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/52.png', price: 0.50 },
+                      { ticker: 'ADA', name: 'Cardano', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png', price: 0.45 },
+                      { ticker: 'AVAX', name: 'Avalanche', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5805.png', price: 35.00 },
+                      { ticker: 'LTC', name: 'Litecoin', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/2.png', price: 85.00 },
+                      { ticker: 'MATIC', name: 'Polygon', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/3890.png', price: 0.75 },
+                      { ticker: 'ARB', name: 'Arbitrum', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/11841.png', price: 1.20 },
+                      { ticker: 'LINK', name: 'Chainlink', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1975.png', price: 15.50 },
+                      { ticker: 'UNI', name: 'Uniswap', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7083.png', price: 10.50 },
+                      { ticker: 'SHIB', name: 'Shiba Inu', icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png', price: 0.000025 }
+                 ];
+
+                 const fromAmountInput = document.getElementById('from-amount');
+                 const toAmountInput = document.getElementById('to-amount');
+                 const fromUsdValue = document.getElementById('from-usd-value');
+                 const toUsdValue = document.getElementById('to-usd-value');
+                 const quoteInfo = document.getElementById('quote-info');
+                 const actionButton = document.getElementById('swap-action-button');
+                 const swapButton = document.getElementById('swap-tokens-button');
+                 const modal = document.getElementById('token-modal');
+                 const tokenList = document.getElementById('token-list-swap');
+                
+                 let fromToken = swapTokens[0];
+                 let toToken = swapTokens[1];
+                 let currentSelectionTarget = null;
+                 const userBalances = { 'ETH': 2.5, 'USDC': 1000, 'DAI': 500, 'WBTC': 0.05, 'MATIC': 2500, 'LINK': 150, 'BNB': 10, 'SOL': 25, 'XRP': 5000, 'ADA': 10000, 'AVAX': 100, 'LTC': 20, 'ARB': 1200, 'UNI': 300, 'SHIB': 50000000 };
+
+                 function formatCurrency(value) {
+                     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                 }
+                
+                 function updateSwapUI() {
+                     document.getElementById('from-token-icon').src = fromToken.icon;
+                     document.getElementById('from-token-ticker').textContent = fromToken.ticker;
+                     document.getElementById('from-balance').textContent = `Balance: ${userBalances[fromToken.ticker] || 0}`;
+                     document.getElementById('to-token-icon').src = toToken.icon;
+                     document.getElementById('to-token-ticker').textContent = toToken.ticker;
+                     document.getElementById('to-balance').textContent = `Balance: ${userBalances[toToken.ticker] || 0}`;
+                     const fromAmount = parseFloat(fromAmountInput.value);
+                     if (!isNaN(fromAmount) && fromAmount > 0) {
+                         fromUsdValue.textContent = formatCurrency(fromAmount * fromToken.price);
+                         const conversionRate = fromToken.price / toToken.price;
+                         const toAmount = fromAmount * conversionRate;
+                         toAmountInput.value = toAmount.toFixed(5);
+                         toUsdValue.textContent = formatCurrency(toAmount * toToken.price);
+                         quoteInfo.innerHTML = `1 ${fromToken.ticker} ≈ ${(conversionRate).toFixed(4)} ${toToken.ticker} <span class="best-quote">(Best quote)</span>`;
+                         actionButton.disabled = false;
+                     } else {
+                         toAmountInput.value = '';
+                         fromUsdValue.textContent = '$0.00';
+                         toUsdValue.textContent = '$0.00';
+                         quoteInfo.textContent = 'Fetching quotes...';
+                         actionButton.disabled = true;
+                     }
+                 }
+
+                 fromAmountInput.addEventListener('input', updateSwapUI);
+                 swapButton.addEventListener('click', () => {
+                     [fromToken, toToken] = [toToken, fromToken];
+                     updateSwapUI();
+                 });
+                
+                 actionButton.addEventListener('click', () => {
+                     if (!actionButton.disabled) {
+                         alert('Swap Successfully');
+                         fromAmountInput.value = '';
+                         updateSwapUI();
+                     }
+                 });
+
+                 function openModal(target) {
+                     currentSelectionTarget = target;
+                     document.getElementById('modal-title-swap').textContent = 'Select a token';
+                     renderTokenList();
+                     modal.style.display = 'block';
+                 }
+
+                 function closeModal(modalElem) {
+                    const modalToClose = modalElem || document.getElementById('token-modal');
+                    modalToClose.style.display = 'none';
+                    if (modalToClose.id === 'token-modal') {
+                        document.getElementById('search-input-swap').value = '';
+                    }
+                 }
+                
+                 function renderTokenList(filter = '') {
+                     tokenList.innerHTML = '';
+                     const lowercasedFilter = filter.toLowerCase();
+                     const currentSelectedTicker = (currentSelectionTarget === 'from') ? fromToken.ticker : toToken.ticker;
+                     swapTokens
+                         .filter(token => token.ticker.toLowerCase().includes(lowercasedFilter) || token.name.toLowerCase().includes(lowercasedFilter))
+                         .forEach(token => {
+                             const isSelected = token.ticker === currentSelectedTicker;
+                             const listItem = document.createElement('li');
+                             listItem.dataset.ticker = token.ticker;
+                             listItem.innerHTML = `<img src="${token.icon}" alt="${token.name}" class="token-icon"><div class="token-info"><span class="token-ticker">${token.ticker}</span><span class="token-name">${token.name}</span></div>${isSelected ? '<span class="checkmark">✓</span>' : ''}`;
+                             tokenList.appendChild(listItem);
+                         });
+                 }
+
+                 document.getElementById('from-token-selector').addEventListener('click', () => openModal('from'));
+                 document.getElementById('to-token-selector').addEventListener('click', () => openModal('to'));
+                 modal.querySelector('.modal-close-btn').addEventListener('click', () => closeModal());
+                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+                 document.getElementById('search-input-swap').addEventListener('input', (e) => renderTokenList(e.target.value));
+
+                 tokenList.addEventListener('click', (e) => {
+                     const li = e.target.closest('li');
+                     if (!li) return;
+                     const selectedTicker = li.dataset.ticker;
+                     const newSelectedToken = swapTokens.find(t => t.ticker === selectedTicker);
+                     if (currentSelectionTarget === 'from') {
+                         if (toToken.ticker === selectedTicker) { [fromToken, toToken] = [toToken, fromToken]; } 
+                         else { fromToken = newSelectedToken; }
+                     } else {
+                         if (fromToken.ticker === selectedTicker) { [fromToken, toToken] = [toToken, fromToken]; } 
+                         else { toToken = newSelectedToken; }
+                     }
+                     updateSwapUI();
+                     closeModal();
+                 });
+                 updateSwapUI();
+            }
+
+            // --- BRIDGE APP LOGIC ---
+            function initBridgeApp() {
+                 const fromSection = document.getElementById('from-section');
+                 const toSection = document.getElementById('to-section');
+                 const fromNetworkBtn = document.getElementById('from-network-btn');
+                 const toNetworkBtn = document.getElementById('to-network-btn');
+                 const fromNetworkImg = document.getElementById('from-network-img');
+                 const toNetworkImg = document.getElementById('to-network-img');
+                 const fromNetworkName = document.getElementById('from-network-name');
+                 const toNetworkName = document.getElementById('to-network-name');
+                 const tokenSelectBtn = document.getElementById('bridge-token-select-btn');
+                 const tokenImg = document.getElementById('bridge-token-img');
+                 const tokenName = document.getElementById('bridge-token-name');
+                 const tokenBalance = document.getElementById('bridge-token-balance');
+                 const receivedTokenName = document.getElementById('bridge-received-token-name');
+                 const amountInput = document.getElementById('bridge-amount-input');
+                 const amountOutput = document.getElementById('bridge-amount-output');
+                 const swapBtn = document.getElementById('swap-networks-btn');
+                 const actionBtn = document.getElementById('bridge-action-btn');
+                 const detailsSection = document.getElementById('bridge-details-section');
+                 const rateDisplay = document.getElementById('bridge-rate-display');
+                 const feeDisplay = document.getElementById('bridge-fee-display');
+                 const modal = document.getElementById('bridge-selection-modal');
+                 const modalTitle = document.getElementById('modal-title-bridge');
+                 const modalSearch = document.getElementById('modal-search-bridge');
+                 const modalContent = document.getElementById('modal-content-bridge');
+                 const reviewModal = document.getElementById('review-modal');
+                 const confirmBridgeBtn = document.getElementById('confirm-bridge-btn');
+                 const cancelBridgeBtn = document.getElementById('cancel-bridge-btn');
+                
+                 const networks = {
+                     ethereum: { name: 'Ethereum', img: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg', color: '#627EEA' },
+                     polygon: { name: 'Polygon', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3f/Polygon_blockchain_logo.svg/2560px-Polygon_blockchain_logo.svg.png', color: '#8247E5' },
+                     arbitrum: { name: 'Arbitrum', img: 'https://asset.brandfetch.io/idSUr3v5Gz/id5p5Iq0iS.svg', color: '#28A0F0' },
+                     optimism: { name: 'Optimism', img: 'https://raw.githubusercontent.com/optimism/brand-kit/main/assets/images/Profile-Logo.png', color: '#FF0420' },
+                     bsc: { name: 'BNB Chain', img: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Binance-coin-bnb-logo.png', color: '#F3BA2F' },
+                     solana: { name: 'Solana', img: 'https://upload.wikimedia.org/wikipedia/en/b/b9/Solana_logo.png', color: '#9945FF' },
+                     avalanche: { name: 'Avalanche', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/13/Avalanche_logo.svg/2560px-Avalanche_logo.svg.png', color: '#E84142' },
+                     fantom: { name: 'Fantom', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/5a/Fantom_logo.svg/2560px-Fantom_logo.svg.png', color: '#1969FF' },
+                 };
+                 const tokens = {
+                     eth: { name: 'ETH', img: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg', balance: 2.5, fee: 0.002 },
+                     weth: { name: 'WETH', img: 'https://raw.githubusercontent.com/Uniswap/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png', balance: 5.1, fee: 0.001 },
+                     usdc: { name: 'USDC', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Circle_USDC_Logo.svg/2048px-Circle_USDC_Logo.svg.png', balance: 10500.75, fee: 5.50 },
+                     usdt: { name: 'USDT', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Tether_USDT_logo.svg/2048px-Tether_USDT_logo.svg.png', balance: 25000, fee: 5.25 },
+                     dai: { name: 'DAI', img: 'https://raw.githubusercontent.com/makerdao/dai-ui/master/src/dai.svg', balance: 8765.21, fee: 5.45 },
+                     wbtc: { name: 'WBTC', img: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png', balance: 0.12, fee: 0.0001 },
+                     link: { name: 'LINK', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/16/Chainlink_Logo_Blue.svg/2560px-Chainlink_Logo_Blue.svg.png', balance: 1500, fee: 1.2 },
+                     sol: { name: 'SOL', img: 'https://upload.wikimedia.org/wikipedia/en/b/b9/Solana_logo.png', balance: 120, fee: 0.01 },
+                     avax: { name: 'AVAX', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/13/Avalanche_logo.svg/2560px-Avalanche_logo.svg.png', balance: 350, fee: 0.05 },
+                     shib: { name: 'SHIB', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/53/Shiba_Inu_coin_logo.svg/640px-Shiba_Inu_coin_logo.svg.png', balance: 500000000, fee: 100000 },
+                     matic: { name: 'MATIC', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3f/Polygon_blockchain_logo.svg/2560px-Polygon_blockchain_logo.svg.png', balance: 12500, fee: 10 },
+                     doge: { name: 'DOGE', img: 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d0/Dogecoin_Logo.svg/1280px-Dogecoin_Logo.svg.png', balance: 150000, fee: 50 },
+                     dot: { name: 'DOT', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Polkadot_Logo.svg/2048px-Polkadot_Logo.svg.png', balance: 800, fee: 0.1 },
+                     uni: { name: 'UNI', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Uniswap_Logo.svg/1026px-Uniswap_Logo.svg.png', balance: 950, fee: 0.8 },
+                     aave: { name: 'AAVE', img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Aave_logo.svg/2560px-Aave_logo.svg.png', balance: 150, fee: 0.2 },
+                 };
+                
+                 const rates = {
+                     eth: { to: 'wETH', rate: 0.9995 }, weth: { to: 'ETH', rate: 1.0000 }, usdc: { to: 'USDC', rate: 1.0000 },
+                     usdt: { to: 'USDT', rate: 1.0000 }, dai: { to: 'DAI', rate: 0.9999 }, wbtc: { to: 'WBTC', rate: 1.0000 },
+                     link: { to: 'LINK', rate: 0.9998 }, sol: { to: 'wSOL', rate: 0.9997 }, avax: { to: 'AVAX.e', rate: 0.9997 },
+                     shib: { to: 'SHIB', rate: 1.0000 }, matic: { to: 'MATIC', rate: 1.0000 }, doge: { to: 'wDOGE', rate: 0.9990 },
+                     dot: { to: 'DOT', rate: 0.9998 }, uni: { to: 'UNI', rate: 0.9999 }, aave: { to: 'AAVE', rate: 0.9999 },
+                 };
+                
+                 let state = { fromNetwork: 'ethereum', toNetwork: 'polygon', selectedToken: null, amount: 0, modal: { type: null } };
+
+                 const updateBridgeUI = () => {
+                     const fromNet = networks[state.fromNetwork];
+                     const toNet = networks[state.toNetwork];
+                     fromNetworkName.textContent = fromNet.name;
+                     fromNetworkImg.src = fromNet.img;
+                     fromNetworkImg.onerror = () => fromNetworkImg.src = `https://placehold.co/24x24/${fromNet.color.substring(1)}/FFFFFF?text=${fromNet.name.charAt(0)}`;
+                     toNetworkName.textContent = toNet.name;
+                     toNetworkImg.src = toNet.img;
+                     toNetworkImg.onerror = () => toNetworkImg.src = `https://placehold.co/24x24/${toNet.color.substring(1)}/FFFFFF?text=${toNet.name.charAt(0)}`;
+
+                     if (state.selectedToken) {
+                         const token = tokens[state.selectedToken];
+                         const rateInfo = rates[state.selectedToken];
+                         tokenName.textContent = token.name;
+                         tokenImg.src = token.img;
+                         tokenImg.onerror = () => tokenImg.src = `https://placehold.co/20x20/2d3748/a0aec0?text=${token.name.charAt(0)}`;
+                         tokenBalance.textContent = token.balance.toLocaleString();
+                         receivedTokenName.textContent = rateInfo.to;
+                         rateDisplay.textContent = `1 ${token.name} ≈ ${rateInfo.rate} ${rateInfo.to}`;
+                         feeDisplay.textContent = `~${token.fee.toLocaleString()} ${token.name}`;
+                         detailsSection.classList.remove('hidden');
+                     } else {
+                         tokenName.textContent = 'Select Token';
+                         tokenImg.src = 'https://placehold.co/20x20/2d3748/a0aec0?text=?';
+                         tokenBalance.textContent = '--';
+                         receivedTokenName.textContent = 'Select Token';
+                         detailsSection.classList.add('hidden');
+                     }
+                    
+                     const receiveAmount = state.selectedToken ? state.amount * rates[state.selectedToken].rate : 0;
+                     amountOutput.textContent = state.amount > 0 ? parseFloat(receiveAmount.toFixed(6)) : '0.0';
+
+                     if (!state.selectedToken) {
+                         actionBtn.textContent = 'Select a token';
+                         actionBtn.disabled = true;
+                     } else if (state.amount <= 0) {
+                         actionBtn.textContent = 'Enter an amount';
+                         actionBtn.disabled = true;
+                     } else if (state.amount > tokens[state.selectedToken].balance) {
+                         actionBtn.textContent = 'Insufficient balance';
+                         actionBtn.disabled = true;
+                     } else {
+                         actionBtn.textContent = 'Review Bridge';
+                         actionBtn.disabled = false;
+                     }
+                 };
+
+                 const openModal = (type) => {
+                     state.modal.type = type;
+                     modal.style.display = 'flex';
+                     modalSearch.value = '';
+                     renderModalContent();
+                 };
+
+                 const closeModal = (modalElem) => {
+                     const modalContainer = modalElem.querySelector('.glass-effect, .modal-content-wrapper');
+                     modalContainer.classList.add('fade-out');
+                     setTimeout(() => {
+                         modalElem.style.display = 'none';
+                         modalContainer.classList.remove('fade-out');
+                     }, 300);
+                 };
+                
+                 const renderModalContent = () => {
+                     let data, currentSelection;
+                     switch (state.modal.type) {
+                         case 'fromNetwork':
+                             modalTitle.textContent = 'From Network'; data = networks; currentSelection = state.fromNetwork; break;
+                         case 'toNetwork':
+                             modalTitle.textContent = 'To Network'; data = networks; currentSelection = state.toNetwork; break;
+                         case 'token':
+                             modalTitle.textContent = 'Select Token'; data = tokens; currentSelection = state.selectedToken; break;
+                     }
+                     modalContent.innerHTML = '';
+                     const filteredKeys = Object.keys(data).filter(key => 
+                         data[key].name.toLowerCase().includes(modalSearch.value.toLowerCase())
+                     );
+
+                     filteredKeys.forEach(key => {
+                         const item = data[key];
+                         const isSelected = key === currentSelection;
+                         const isDisabled = (state.modal.type === 'fromNetwork' && key === state.toNetwork) || (state.modal.type === 'toNetwork' && key === state.fromNetwork);
+                         const itemEl = document.createElement('button');
+                         itemEl.className = `w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${isSelected ? 'bg-blue-600/50' : 'hover:bg-gray-700/50'} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+                         itemEl.disabled = isDisabled;
+                         itemEl.dataset.key = key;
+                         const balanceHTML = (state.modal.type === 'token') ? `<span class="text-gray-400">${item.balance.toLocaleString()}</span>` : '';
+                         const fallbackSrc = `https://placehold.co/32x32/${(item.color || '2d3748').substring(1)}/a0aec0?text=${item.name.charAt(0)}`;
+                         itemEl.innerHTML = `<div class="flex items-center space-x-3"><img src="${item.img}" onerror="this.onerror=null;this.src='${fallbackSrc}';" class="w-8 h-8 rounded-full bg-gray-700" alt="${item.name}"><span class="font-semibold">${item.name}</span></div>${balanceHTML}`;
+                         itemEl.addEventListener('click', () => handleSelection(key));
+                         modalContent.appendChild(itemEl);
+                     });
+                 };
+                
+                 const handleSelection = (key) => {
+                     switch (state.modal.type) {
+                         case 'fromNetwork': state.fromNetwork = key; break;
+                         case 'toNetwork': state.toNetwork = key; break;
+                         case 'token': state.selectedToken = key; break;
+                     }
+                     closeModal(modal);
+                     updateBridgeUI();
+                 };
+                
+                 const openReviewModal = () => {
+                     const fromNet = networks[state.fromNetwork];
+                     const toNet = networks[state.toNetwork];
+                     const token = tokens[state.selectedToken];
+                     const rate = rates[state.selectedToken];
+                     const receiveAmount = parseFloat((state.amount * rate.rate).toFixed(6));
+                     const fallbackFrom = `https://placehold.co/24x24/${fromNet.color.substring(1)}/FFFFFF?text=${fromNet.name.charAt(0)}`;
+                     const fallbackTo = `https://placehold.co/24x24/${toNet.color.substring(1)}/FFFFFF?text=${toNet.name.charAt(0)}`;
+                    
+                     document.getElementById('review-from').innerHTML = `<img src="${fromNet.img}" onerror="this.onerror=null;this.src='${fallbackFrom}';" class="w-6 h-6 rounded-full bg-gray-700"> <span class="font-semibold">${fromNet.name}</span>`;
+                     document.getElementById('review-to').innerHTML = `<img src="${toNet.img}" onerror="this.onerror=null;this.src='${fallbackTo}';" class="w-6 h-6 rounded-full bg-gray-700"> <span class="font-semibold">${toNet.name}</span>`;
+                     document.getElementById('review-send').innerHTML = `<span>${state.amount.toLocaleString()} ${token.name}</span>`;
+                     document.getElementById('review-receive').innerHTML = `<span>≈ ${receiveAmount.toLocaleString()} ${rate.to}</span>`;
+                     reviewModal.style.display = 'flex';
+                 };
+
+                 fromNetworkBtn.addEventListener('click', () => openModal('fromNetwork'));
+                 toNetworkBtn.addEventListener('click', () => openModal('toNetwork'));
+                 tokenSelectBtn.addEventListener('click', () => openModal('token'));
+                
+                 document.querySelectorAll('.modal-close-btn').forEach(btn => btn.addEventListener('click', () => closeModal(document.getElementById(btn.dataset.modalId))));
+                 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+                 reviewModal.addEventListener('click', (e) => { if (e.target === reviewModal) closeModal(reviewModal); });
+
+                 modalSearch.addEventListener('input', renderModalContent);
+                 actionBtn.addEventListener('click', () => { if (!actionBtn.disabled) openReviewModal(); });
+                 cancelBridgeBtn.addEventListener('click', () => closeModal(reviewModal));
+
+                 confirmBridgeBtn.addEventListener('click', () => {
+                     closeModal(reviewModal);
+                    
+                     const messageBox = document.createElement('div');
+                     messageBox.className = 'fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg show-message';
+                     messageBox.textContent = 'Bridge Successfully';
+                     document.body.appendChild(messageBox);
+
+                     setTimeout(() => {
+                         messageBox.classList.add('fade-out');
+                         setTimeout(() => messageBox.remove(), 500);
+                     }, 3000);
+                 });
+
+                 swapBtn.addEventListener('click', () => {
+                     fromSection.style.transform = 'translateY(110px)';
+                     toSection.style.transform = 'translateY(-110px)';
+                     setTimeout(() => {
+                         [state.fromNetwork, state.toNetwork] = [state.toNetwork, state.fromNetwork];
+                         fromSection.style.transition = 'none';
+                         toSection.style.transition = 'none';
+                         fromSection.style.transform = '';
+                         toSection.style.transform = '';
+                         setTimeout(() => {
+                             fromSection.style.transition = 'all 0.3s ease';
+                             toSection.style.transition = 'all 0.3s ease';
+                             updateBridgeUI();
+                         }, 10);
+                     }, 300);
+                 });
+
+                 amountInput.addEventListener('input', (e) => {
+                     state.amount = parseFloat(e.target.value) || 0;
+                     updateBridgeUI();
+                 });
+
+                 updateBridgeUI();
+            }
+
+            // Initialize both apps
+            initSwapApp();
+            initBridgeApp();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amount to buy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Base Styles & Variables */
+        :root {
+            --primary-blue: #4A90E2;
+            --light-blue: #D4E4F7;
+            --background-color: #F4F6F8;
+            --container-bg: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --border-color: #E5E7EB;
+            --disabled-bg: #E5E7EB;
+            --disabled-text: #9CA3AF;
+            --active-bg: #3B82F6;
+            --active-text: #FFFFFF;
+            --success-bg: #22C55E;
+            --hover-bg: #E5E7EB;
+            --item-hover-bg: #F3F4F6;
+            --selectors-bar-bg: #F3F4F6;
+        }
+
+        body.dark-theme {
+            --background-color: #111827;
+            --container-bg: #1F2937;
+            --text-primary: #F9FAFB;
+            --text-secondary: #9CA3AF;
+            --border-color: #4B5563;
+            --disabled-bg: #374151;
+            --disabled-text: #6B7280;
+            --active-bg: #2563EB;
+            --hover-bg: #374151;
+            --item-hover-bg: #374151;
+            --selectors-bar-bg: #111827;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            transition: background-color 0.3s;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 420px;
+            width: 100%;
+            background-color: var(--container-bg);
+            padding: 24px;
+            box-sizing: border-box;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s;
+            position: relative; /* For positioning theme button */
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .header p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 4px 0 0;
+        }
+        .header .cancel-btn {
+            position: absolute;
+            left: 24px;
+            top: 24px;
+            color: var(--primary-blue);
+            font-size: 16px;
+            font-weight: 500;
+            background: none; border: none; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .header .cancel-btn:hover {
+            opacity: 0.7;
+        }
+        .header .chain-selector {
+            margin: 12px auto 0;
+            max-width: 200px;
+        }
+
+        /* Theme Toggle Button */
+        #theme-toggle-btn {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 6px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #theme-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+        #theme-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        .hidden { display: none; }
+
+
+        /* Account & Country Selectors */
+        .selectors-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--selectors-bar-bg);
+            border-radius: 20px;
+            padding: 6px;
+            margin-bottom: 24px;
+        }
+        .selector-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            background-color: var(--container-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .selector-btn:hover {
+            background-color: var(--hover-bg);
+        }
+        .selector-btn .icon {
+            width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+        }
+        .selector-btn .flag { font-size: 24px; }
+        .dropdown-arrow::after {
+            content: '▼';
+            font-size: 0.6em;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        /* Input Groups */
+        .input-group { margin-bottom: 24px; }
+        .input-group > label {
+            display: block; font-size: 16px; font-weight: 600;
+            color: var(--text-primary); margin-bottom: 12px;
+        }
+        .input-box {
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .input-box.interactive { cursor: pointer; }
+        .input-box.interactive:hover { border-color: var(--primary-blue); }
+        .input-box .currency-icon { width: 36px; height: 36px; }
+        .input-box .main-text { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .input-box .selector { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+        .input-box .selector.interactive {
+            cursor: pointer; padding: 4px; border-radius: 4px;
+        }
+        .input-box .selector.interactive:hover { background-color: var(--item-hover-bg); }
+        .input-box input {
+            border: none; outline: none; font-size: 32px; font-weight: 700;
+            width: 100%; background-color: transparent; color: var(--text-primary);
+            padding: 0; -moz-appearance: textfield;
+        }
+        .input-box input::-webkit-outer-spin-button, .input-box input::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .balance-info { font-size: 13px; color: var(--text-secondary); margin-top: 8px; padding-left: 4px; }
+
+        /* Flex utilities */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .flex-center { display: flex; align-items: center; gap: 12px; }
+
+        /* Payment Method */
+        #payment-method-icon {
+            font-size: 24px; display: inline-flex; align-items: center;
+            justify-content: center; width: 36px; height: 36px;
+        }
+        #payment-method-icon img { max-height: 24px; max-width: 100%; }
+        .payment-logos {
+            display: flex; gap: 8px; margin-top: 12px;
+            align-items: center; flex-wrap: wrap;
+        }
+        .payment-logos .logo {
+            border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px;
+            font-size: 12px; font-weight: 600; color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .payment-logos .logo.selected {
+            border-color: var(--primary-blue); color: var(--primary-blue); background-color: var(--light-blue);
+        }
+        body.dark-theme .payment-logos .logo.selected {
+            background-color: rgba(59, 130, 246, 0.3);
+        }
+
+        /* Action Button */
+        .action-button {
+            width: 100%; background-color: var(--disabled-bg); color: var(--disabled-text);
+            border: none; border-radius: 16px; padding: 16px; font-size: 18px;
+            font-weight: 600; cursor: not-allowed; margin-top: 24px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .action-button.active {
+            background-color: var(--active-bg); color: var(--active-text); cursor: pointer;
+        }
+        .action-button.success {
+            background-color: var(--success-bg); color: var(--active-text); cursor: not-allowed;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background-color: var(--container-bg); margin: auto; padding: 24px;
+            border-radius: 16px; width: 90%; max-width: 400px; animation: slide-up 0.3s ease-out;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+        .close-btn { font-size: 24px; font-weight: bold; cursor: pointer; color: var(--text-secondary); }
+        .modal-list { list-style: none; padding: 0; margin: 0; max-height: 60vh; overflow-y: auto; }
+        .modal-list li {
+            padding: 12px 8px; display: flex; align-items: center; gap: 16px;
+            cursor: pointer; border-radius: 8px; transition: background-color 0.2s;
+            color: var(--text-primary);
+        }
+        .modal-list li:hover { background-color: var(--item-hover-bg); }
+        .modal-list .item-icon { width: 32px; height: 32px; }
+        .modal-list .item-flag { font-size: 32px; }
+        .modal-list .item-name { font-weight: 500; }
+
+        @keyframes slide-up {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Page Back Button Style */
+        #page-back-button {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1001; /* Higher than modal */
+            background-color: var(--container-bg);
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-decoration: none;
+            transition: transform 0.2s ease, color 0.2s ease, background-color 0.3s;
+        }
+        #page-back-button:hover {
+            color: var(--text-primary);
+            transform: scale(1.1);
+        }
+        #page-back-button svg {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="main.html" id="page-back-button" title="Go Back">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+        </svg>
+    </a>
+
+    <div class="container">
+        <header class="header">
+            <button class="cancel-btn">Cancel</button>
+             <button id="theme-toggle-btn" title="Toggle theme">
+                <svg id="theme-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>
+                <svg id="theme-moon" class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>
+            </button>
+            <h1>Buy crypto</h1>
+            <p>Select Chain</p>
+            <div class="chain-selector selector-btn" id="chain-selector-btn">
+                <span id="selected-chain-name">Ethereum</span>
+                <span class="dropdown-arrow"></span>
+            </div>
+        </header>
+
+        <main>
+            <div class="selectors-bar">
+                <div class="selector-btn" id="account-selector">
+                    <img src="https://placehold.co/48x48/FBBF24/FFFFFF?text=A" alt="Account Icon" class="icon">
+                    <span>Account 1</span>
+                </div>
+                <div class="selector-btn" id="country-selector">
+                    <span class="flag" id="selected-flag">🇮🇳</span>
+                    <span class="dropdown-arrow"></span>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-box interactive" id="coin-selector-box">
+                    <div class="flex-between">
+                        <div class="flex-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" alt="BTC icon" class="currency-icon" id="selected-coin-icon">
+                            <span class="main-text" id="selected-coin-name">Bitcoin</span>
+                        </div>
+                        <div class="selector dropdown-arrow" id="selected-coin-ticker">BTC</div>
+                    </div>
+                </div>
+                <p class="balance-info">Current balance: 0 <span id="balance-ticker">BTC</span> ≈ $0.00</p>
+            </div>
+
+            <div class="input-group">
+                <label for="amount">Amount</label>
+                <div class="input-box">
+                    <div class="flex-between">
+                        <div class="flex-center">
+                            <span style="font-size: 32px; font-weight: 700;" id="selected-currency-symbol">₹</span>
+                            <input type="number" id="amount-input" value="0" placeholder="0">
+                        </div>
+                        <div class="selector dropdown-arrow interactive" id="selected-currency-code">INR</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Update payment method</label>
+                <div class="input-box">
+                    <div class="flex-between">
+                        <div class="flex-center">
+                            <span id="payment-method-icon">🏛️</span>
+                            <span class="main-text" id="payment-method-name">IMPS</span>
+                        </div>
+                        <div class="selector" style="color: var(--primary-blue); font-weight: 500;">Change</div>
+                    </div>
+                </div>
+                <div class="payment-logos" id="payment-logos-container">
+                    <div class="logo" data-name="UPI" data-icon='<img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI Logo" style="height: 18px;">'>UPI</div>
+                    <div class="logo" data-name="Debit/Credit Card" data-icon='💳'>Debit/Credit Card</div>
+                    <div class="logo selected" data-name="IMPS" data-icon="🏛️">IMPS</div>
+                    <div class="logo" data-name="VISA" data-icon='<img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="VISA Logo" style="height: 14px;">'>VISA</div>
+                    <div class="logo" data-name="Mastercard" data-icon='<img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="Mastercard Logo" style="height: 18px;">'>Mastercard</div>
+                </div>
+            </div>
+
+            <button class="action-button" id="get-quotes-btn">Get quotes</button>
+        </main>
+    </div>
+
+    <div id="chain-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select a chain</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <ul class="modal-list" id="chain-list"></ul>
+        </div>
+    </div>
+
+    <div id="coin-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select a coin</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <ul class="modal-list" id="coin-list"></ul>
+        </div>
+    </div>
+
+    <div id="country-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Select currency</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <ul class="modal-list" id="country-list"></ul>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DATA ---
+            const chains = [
+                { name: 'Ethereum' }, { name: 'Solana' }, { name: 'BNB Chain' },
+                { name: 'Polygon' }, { name: 'Avalanche' }
+            ];
+            const coins = [
+                { name: 'Bitcoin', ticker: 'BTC', icon: 'https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg' },
+                { name: 'Ethereum', ticker: 'ETH', icon: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg' },
+                { name: 'Tether', ticker: 'USDT', icon: 'https://upload.wikimedia.org/wikipedia/commons/e/e9/Tether_USDT.png' },
+                { name: 'Solana', ticker: 'SOL', icon: 'https://upload.wikimedia.org/wikipedia/en/b/b9/Solana_logo.png' },
+                { name: 'BNB', ticker: 'BNB', icon: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/BNB%2C_native_cryptocurrency_for_the_Binance_Smart_Chain.svg/330px-BNB%2C_native_cryptocurrency_for_the_Binance_Smart_Chain.svg.png' },
+            ];
+            const countries = [
+                { name: 'India', currency: 'INR', symbol: '₹', flag: '🇮🇳' },
+                { name: 'United States', currency: 'USD', symbol: '$', flag: '🇺🇸' },
+                { name: 'United Kingdom', currency: 'GBP', symbol: '£', flag: '🇬🇧' },
+                { name: 'Europe', currency: 'EUR', symbol: '€', flag: '🇪🇺' },
+                { name: 'Japan', currency: 'JPY', symbol: '¥', flag: '🇯🇵' },
+                { name: 'Canada', currency: 'CAD', symbol: '$', flag: '🇨🇦' },
+                { name: 'Australia', currency: 'AUD', symbol: '$', flag: '🇦🇺' }
+            ];
+
+            // --- DOM ELEMENTS ---
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const sunIcon = document.getElementById('theme-sun');
+            const moonIcon = document.getElementById('theme-moon');
+            const chainSelectorBtn = document.getElementById('chain-selector-btn');
+            const coinSelectorBox = document.getElementById('coin-selector-box');
+            const countrySelector = document.getElementById('country-selector');
+            const currencyCodeSelector = document.getElementById('selected-currency-code');
+            const chainModal = document.getElementById('chain-modal');
+            const coinModal = document.getElementById('coin-modal');
+            const countryModal = document.getElementById('country-modal');
+            const chainList = document.getElementById('chain-list');
+            const coinList = document.getElementById('coin-list');
+            const countryList = document.getElementById('country-list');
+            const amountInput = document.getElementById('amount-input');
+            const getQuotesBtn = document.getElementById('get-quotes-btn');
+            const paymentLogosContainer = document.getElementById('payment-logos-container');
+
+            // --- THEME HANDLING ---
+            const applyTheme = (theme) => {
+                if (theme === 'dark') {
+                    document.body.classList.add('dark-theme');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                }
+            };
+            themeToggleBtn.addEventListener('click', () => {
+                const isDark = document.body.classList.contains('dark-theme');
+                const newTheme = isDark ? 'light' : 'dark';
+                localStorage.setItem('theme', newTheme);
+                applyTheme(newTheme);
+            });
+            
+            // --- MODAL HANDLING ---
+            function setupModal(triggers, modal, list, data, renderFn, selectFn) {
+                const closeBtn = modal.querySelector('.close-btn');
+                list.innerHTML = data.map(renderFn).join('');
+                const openModal = () => modal.style.display = 'flex';
+                triggers.forEach(trigger => trigger.addEventListener('click', openModal));
+                const closeModal = () => modal.style.display = 'none';
+                closeBtn.addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+                list.addEventListener('click', (e) => {
+                    const itemElement = e.target.closest('li');
+                    if (itemElement) {
+                        const itemName = itemElement.dataset.name;
+                        const selectedItem = data.find(item => item.name === itemName);
+                        if (selectedItem) {
+                            selectFn(selectedItem);
+                            closeModal();
+                        }
+                    }
+                });
+            }
+
+            // --- RENDER & SELECT FUNCTIONS ---
+            const renderChainItem = (chain) => `<li data-name="${chain.name}"><span class="item-name">${chain.name}</span></li>`;
+            const selectChain = (chain) => {
+                document.getElementById('selected-chain-name').textContent = chain.name;
+            };
+            const renderCoinItem = (coin) => `<li data-name="${coin.name}"><img src="${coin.icon}" alt="${coin.name}" class="item-icon" onerror="this.style.display='none'"><span class="item-name">${coin.name} (${coin.ticker})</span></li>`;
+            const selectCoin = (coin) => {
+                document.getElementById('selected-coin-icon').src = coin.icon;
+                document.getElementById('selected-coin-name').textContent = coin.name;
+                document.getElementById('selected-coin-ticker').textContent = coin.ticker;
+                document.getElementById('balance-ticker').textContent = coin.ticker;
+            };
+            const renderCountryItem = (country) => `<li data-name="${country.name}"><span class="item-flag">${country.flag}</span><span class="item-name">${country.name} (${country.currency})</span></li>`;
+            const selectCountry = (country) => {
+                document.getElementById('selected-flag').textContent = country.flag;
+                document.getElementById('selected-currency-symbol').textContent = country.symbol;
+                document.getElementById('selected-currency-code').textContent = country.currency;
+            };
+
+            // --- INITIALIZE MODALS ---
+            setupModal([chainSelectorBtn], chainModal, chainList, chains, renderChainItem, selectChain);
+            setupModal([coinSelectorBox], coinModal, coinList, coins, renderCoinItem, selectCoin);
+            setupModal([countrySelector, currencyCodeSelector], countryModal, countryList, countries, renderCountryItem, selectCountry);
+
+            // --- EVENT LISTENERS ---
+            amountInput.addEventListener('input', () => {
+                getQuotesBtn.classList.toggle('active', parseFloat(amountInput.value) > 0);
+            });
+            paymentLogosContainer.addEventListener('click', (e) => {
+                const targetLogo = e.target.closest('.logo');
+                if (!targetLogo) return;
+                paymentLogosContainer.querySelectorAll('.logo').forEach(logo => logo.classList.remove('selected'));
+                targetLogo.classList.add('selected');
+                document.getElementById('payment-method-name').textContent = targetLogo.dataset.name;
+                document.getElementById('payment-method-icon').innerHTML = targetLogo.dataset.icon;
+            });
+            getQuotesBtn.addEventListener('click', () => {
+                if (getQuotesBtn.classList.contains('active') && !getQuotesBtn.disabled) {
+                    getQuotesBtn.textContent = 'Purchased Successfully!';
+                    getQuotesBtn.classList.remove('active');
+                    getQuotesBtn.classList.add('success');
+                    getQuotesBtn.disabled = true;
+                    setTimeout(() => {
+                        getQuotesBtn.textContent = 'Get quotes';
+                        getQuotesBtn.classList.remove('success');
+                        getQuotesBtn.disabled = false;
+                        amountInput.value = '0';
+                        amountInput.dispatchEvent(new Event('input'));
+                    }, 2500);
+                }
+            });
+            document.querySelector('.cancel-btn').addEventListener('click', () => {
+                selectChain(chains[0]);
+                selectCoin(coins[0]);
+                selectCountry(countries[0]);
+                amountInput.value = '0';
+                amountInput.dispatchEvent(new Event('input'));
+                const defaultPayment = document.querySelector('.logo[data-name="IMPS"]');
+                if (defaultPayment) defaultPayment.click();
+                console.log('Payment cancelled. Form reset.');
+            });
+
+            // --- INITIAL STATE ---
+            const init = () => {
+                applyTheme(localStorage.getItem('theme') || 'light'); // Default to light
+                selectChain(chains[0]);
+                selectCoin(coins[0]);
+                selectCountry(countries[0]);
+                const initialPayment = document.querySelector('.logo.selected');
+                if (initialPayment) {
+                    document.getElementById('payment-method-icon').innerHTML = initialPayment.dataset.icon;
+                }
+            };
+            
+            init();
+        });
+    </script>
+</body>
+</html>
